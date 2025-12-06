@@ -263,7 +263,8 @@ function Scene({
     const declinationRad = (declination * Math.PI) / 180;
 
     // Hour angle (0° at solar noon, 15° per hour)
-    const hourAngle = (hourOfDay - 12) * 15;
+    // Subtract 90° to align with Three.js coordinate system where observer at long=0 starts on +X axis
+    const hourAngle = (hourOfDay - 12) * 15 - 90;
     const hourAngleRad = (hourAngle * Math.PI) / 180;
 
     // Convert to Cartesian coordinates

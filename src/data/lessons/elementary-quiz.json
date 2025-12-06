@@ -1,0 +1,33 @@
+{
+  "gradeLevel": "elementary",
+  "questions": [
+    {
+      "id": "q-elementary-1",
+      "type": "multiple-choice",
+      "question": "Why do we have seasons?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Earth gets closer and farther from the sun",
+          "correct": false
+        },
+        {
+          "id": "B",
+          "text": "Earth's tilt changes how high the sun gets in the sky",
+          "correct": true
+        },
+        {
+          "id": "C",
+          "text": "The sun gets hotter and colder",
+          "correct": false
+        },
+        {
+          "id": "D",
+          "text": "Clouds block the sun in winter",
+          "correct": false
+        }
+      ],
+      "correctAnswer": "B"
+    }
+  ]
+}
