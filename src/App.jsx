@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import EarthVisualization from './EarthVisualization.jsx';
 
 const SunPositionViz = () => {
   const [latitude, setLatitude] = useState(45);
@@ -1261,6 +1262,31 @@ const SunPositionViz = () => {
           <strong style={{ color: '#4ade80' }}>Equator at Equinox:</strong> The sun passes directly overhead (90° altitude) at noon. This is one of only two days per year when the sun's path crosses the zenith at the equator. Day and night are exactly 12 hours each.
         </div>
       )}
+
+      {/* 3D Earth Visualization */}
+      <div style={{
+        marginTop: '24px',
+        height: containerWidth < 600 ? '300px' : '500px',
+        width: '100%',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        border: '1px solid #393941'
+      }}>
+        <EarthVisualization
+          latitude={latitude}
+          longitude={0}
+          axialTilt={axialTilt}
+          dayOfYear={dayOfYear}
+          hourOfDay={hourOfDay}
+          currentAzimuth={currentAzimuth}
+          currentAltitude={currentAltitude}
+        />
+      </div>
+
+      {/* 3D View Legend */}
+      <div style={{ fontSize: '11px', color: '#a1a1a8', marginTop: '8px', textAlign: 'center' }}>
+        3D View: Purple marker shows your location. Sun illumination corresponds to altitude graph above. Drag to rotate, scroll to zoom.
+      </div>
     </div>
   );
 };
