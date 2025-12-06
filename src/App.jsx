@@ -14,6 +14,7 @@ const SunPositionViz = () => {
   const containerRef = useRef(null);
   const playRef = useRef(null);
   const svgRef = useRef(null);
+  const compassRotationRef = useRef(0); // Track cumulative rotation for smooth compass animation
   
   useEffect(() => {
     const updateWidth = () => {
@@ -98,6 +99,28 @@ const SunPositionViz = () => {
   };
 
   const currentAzimuth = getAzimuth(hourOfDay, declination);
+
+  // FIX ISSUE #2: Calculate smooth compass rotation that doesn't "swing back"
+  // We need to track cumulative rotation to avoid the 359° -> 1° jump
+  const getSmoothedRotation = (newAzimuth) => {
+    const prevRotation = compassRotationRef.current;
+    const prevAzimuth = prevRotation % 360;
+
+    // Calculate the shortest angular difference
+    let delta = newAzimuth - prevAzimuth;
+
+    // Normalize delta to [-180, 180] range
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    // Update cumulative rotation
+    const newRotation = prevRotation + delta;
+    compassRotationRef.current = newRotation;
+
+    return newRotation;
+  };
+
+  const compassRotation = getSmoothedRotation(currentAzimuth);
 
   // Get cardinal direction from azimuth
   const getCardinalDirection = (azimuth) => {
@@ -185,8 +208,23 @@ const SunPositionViz = () => {
   }, [equinoxAltitudes, graphWidth, yMax, yRange, viewMode]);
   
   // FIX #2: Ensure path is always generated even at poles where altitude is constant
+  // At poles, the path becomes a horizontal line. We need to ensure it renders visibly.
   const pathD = curveData.length > 0 ? curveData.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') : '';
   const equinoxPathD = equinoxCurve ? equinoxCurve.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') : '';
+
+  // FIX: Detect poles directly from latitude (most reliable)
+  // At poles (lat ≈ ±90°), sun altitude is constant all day
+  // Previous buggy check: first altitude === last altitude (false positives at ALL latitudes!)
+  const isAtPole = viewMode === 'day' && Math.abs(latitude) > 89.9;
+
+  // Debug logging for verification (can be removed in production)
+  if (viewMode === 'day') {
+    const altitudes = curveData.map(p => p.altitude);
+    const minAlt = Math.min(...altitudes);
+    const maxAlt = Math.max(...altitudes);
+    const altitudeRange = maxAlt - minAlt;
+    console.log(`[Pole Detection] Lat: ${latitude}° | isAtPole: ${isAtPole} | Alt Range: ${altitudeRange.toFixed(2)}° | Min: ${minAlt.toFixed(1)}° Max: ${maxAlt.toFixed(1)}°`);
+  }
   
   const horizonY = altToY(0);
   const horizonVisible = yMin <= 0 && yMax >= 0;
@@ -423,7 +461,7 @@ const SunPositionViz = () => {
             {['day', 'year'].map(mode => (
               <button
                 key={mode}
-                onClick={() => { setViewMode(mode); setIsPlaying(false); }}
+                onClick={() => setViewMode(mode)}
                 aria-pressed={viewMode === mode}
                 aria-label={`${mode === 'day' ? '24 Hours' : '365 Days'} view`}
                 onMouseOver={(e) => {
@@ -589,8 +627,29 @@ const SunPositionViz = () => {
           <path d={equinoxPathD} fill="none" stroke="#a1a1a8" strokeWidth="1" strokeDasharray="3,3" opacity="0.35" clipPath="url(#graphClip)" />
         )}
         
-        {/* Sun path - FIX #2: Always render, even at poles where it's a horizontal line */}
-        {pathD && <path d={pathD} fill="none" stroke="url(#sunGradient)" strokeWidth={viewMode === 'day' ? 2.5 : 1.2} clipPath="url(#graphClip)" />}
+        {/* Sun path - FIX: At poles, add tiny vertical variation to force rendering */}
+        {isAtPole ? (
+          <g>
+            {/* Draw line as a very thin rectangle to ensure it renders */}
+            <rect
+              x={padding.left}
+              y={(curveData[0]?.y || 0) - 1.5}
+              width={graphWidth}
+              height="3"
+              fill="url(#sunGradient)"
+              clipPath="url(#graphClip)"
+            />
+          </g>
+        ) : pathD && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke="url(#sunGradient)"
+            strokeWidth={viewMode === 'day' ? 2.5 : 1.2}
+            strokeLinecap="round"
+            clipPath="url(#graphClip)"
+          />
+        )}
         
         {/* Sunrise/sunset markers */}
         {viewMode === 'day' && sunrisePoint && (
@@ -752,7 +811,7 @@ const SunPositionViz = () => {
             <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>E</div>
             <div style={{ position: 'absolute', bottom: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8' }}>S</div>
             <div style={{ position: 'absolute', left: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>W</div>
-            {/* Sun indicator */}
+            {/* Sun indicator - FIX ISSUE #2: Use smoothed rotation to prevent "swinging back" */}
             <div style={{
               position: 'absolute',
               top: '50%',
@@ -761,7 +820,7 @@ const SunPositionViz = () => {
               height: '16px',
               backgroundColor: '#f4d03f',
               transformOrigin: 'bottom center',
-              transform: `translate(-50%, -100%) rotate(${currentAzimuth}deg)`,
+              transform: `translate(-50%, -100%) rotate(${compassRotation}deg)`,
               transition: 'transform 0.3s ease'
             }}>
               <div style={{
