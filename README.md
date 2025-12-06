@@ -62,10 +62,43 @@ npm run preview
 - **Seasonal Markers**: Year view shows spring, summer, fall, and winter markers
 - **Arctic Circle**: Marked on latitude slider - regions that experience midnight sun/polar night
 
+## For Teachers
+
+**New to this tool?** Check out the comprehensive teacher resources in the [docs/](docs/) folder:
+
+- **[Quick Reference](docs/quick-reference.md)** - One-page cheat sheet for classroom use
+- **[Teacher Guide](docs/teacher-guide.md)** - Complete teaching strategies and tips
+- **[Classroom Activities](docs/classroom-activities.md)** - 15 ready-to-use activities with answer keys
+- **[Deployment Guide](docs/deployment.md)** - Deploy to GitHub Pages, Netlify, or Vercel
+
+**Quick start for teachers:** Read the [docs/README.md](docs/README.md) for a guided introduction!
+
+## Deployment
+
+Deploy your own instance for classroom use:
+
+### GitHub Pages
+```bash
+npm run deploy:github
+```
+
+### Netlify
+```bash
+npm run deploy:netlify
+# Then drag the dist/ folder to Netlify
+```
+
+### Vercel
+```bash
+npm run deploy:vercel
+```
+
+See [Deployment Guide](docs/deployment.md) for detailed step-by-step instructions.
+
 ## Requirements
 
 - Node.js 20.19+ or 22.12+
 
 ## License
 
-Created from a Claude artifact conversation.
+Created from a Claude artifact conversation. MIT License.

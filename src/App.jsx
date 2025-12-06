@@ -8,9 +8,12 @@ const SunPositionViz = () => {
   const [yAxisMode, setYAxisMode] = useState('dynamic');
   const [containerWidth, setContainerWidth] = useState(800);
   const [isPlaying, setIsPlaying] = useState(false);
-  
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipData, setTooltipData] = useState({ x: 0, y: 0, altitude: 0, hour: 0, day: 0 });
+
   const containerRef = useRef(null);
   const playRef = useRef(null);
+  const svgRef = useRef(null);
   
   useEffect(() => {
     const updateWidth = () => {
@@ -66,10 +69,41 @@ const SunPositionViz = () => {
     const decRad = (decl * Math.PI) / 180;
     const latRad = (latitude * Math.PI) / 180;
     const hourAngle = ((hour - 12) * 15 * Math.PI) / 180;
-    const sinAltitude = 
-      Math.sin(latRad) * Math.sin(decRad) + 
+    const sinAltitude =
+      Math.sin(latRad) * Math.sin(decRad) +
       Math.cos(latRad) * Math.cos(decRad) * Math.cos(hourAngle);
     return (Math.asin(Math.max(-1, Math.min(1, sinAltitude))) * 180) / Math.PI;
+  };
+
+  // Calculate azimuth (compass direction of sun)
+  const getAzimuth = (hour, decl) => {
+    const decRad = (decl * Math.PI) / 180;
+    const latRad = (latitude * Math.PI) / 180;
+    const hourAngle = ((hour - 12) * 15 * Math.PI) / 180;
+
+    const altitude = getAltitude(hour, decl);
+    const altRad = (altitude * Math.PI) / 180;
+
+    const cosAzimuth = (Math.sin(decRad) - Math.sin(altRad) * Math.sin(latRad)) /
+                       (Math.cos(altRad) * Math.cos(latRad));
+
+    let azimuth = (Math.acos(Math.max(-1, Math.min(1, cosAzimuth))) * 180) / Math.PI;
+
+    // Adjust for afternoon (west side)
+    if (hour > 12) {
+      azimuth = 360 - azimuth;
+    }
+
+    return azimuth;
+  };
+
+  const currentAzimuth = getAzimuth(hourOfDay, declination);
+
+  // Get cardinal direction from azimuth
+  const getCardinalDirection = (azimuth) => {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const index = Math.round(azimuth / 22.5) % 16;
+    return directions[index];
   };
   
   const getAltitudeAtMinute = (minute) => {
@@ -240,12 +274,90 @@ const SunPositionViz = () => {
     setMinuteOfYear(currentDay * 24 * 60 + hour * 60);
   };
 
+  // Keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Prevent default only for keys we handle
+      const handled = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', ' '].includes(e.key);
+      if (!handled) return;
+
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+
+      e.preventDefault();
+
+      const step = viewMode === 'day' ? 15 : 120; // 15 min for day, 2 hours for year
+      const bigStep = viewMode === 'day' ? 60 : 1440; // 1 hour for day, 1 day for year
+
+      if (e.key === 'ArrowRight') {
+        setMinuteOfYear(m => (m + (e.shiftKey ? bigStep : step)) % totalMinutesInYear);
+      } else if (e.key === 'ArrowLeft') {
+        setMinuteOfYear(m => (m - (e.shiftKey ? bigStep : step) + totalMinutesInYear) % totalMinutesInYear);
+      } else if (e.key === 'ArrowUp') {
+        setLatitude(lat => Math.min(90, lat + (e.shiftKey ? 10 : 1)));
+      } else if (e.key === 'ArrowDown') {
+        setLatitude(lat => Math.max(-90, lat - (e.shiftKey ? 10 : 1)));
+      } else if (e.key === ' ' || e.key === 'Space') {
+        setIsPlaying(p => !p);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode]);
+
+  // Interactive tooltip on hover
+  const handleMouseMove = (e) => {
+    if (!svgRef.current) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Check if mouse is within graph bounds
+    if (mouseX < padding.left || mouseX > padding.left + graphWidth ||
+        mouseY < padding.top || mouseY > padding.top + graphHeight) {
+      setShowTooltip(false);
+      return;
+    }
+
+    // Convert mouse X to time/date
+    const fraction = (mouseX - padding.left) / graphWidth;
+    let tooltipHour, tooltipDay, tooltipMinute;
+
+    if (viewMode === 'day') {
+      tooltipHour = fraction * 24;
+      tooltipDay = dayOfYear;
+      tooltipMinute = Math.floor(minuteOfYear / (24 * 60)) * 24 * 60 + tooltipHour * 60;
+    } else {
+      tooltipMinute = fraction * totalMinutesInYear;
+      tooltipDay = Math.floor(tooltipMinute / (24 * 60)) + 1;
+      tooltipHour = (tooltipMinute % (24 * 60)) / 60;
+    }
+
+    const tooltipAltitude = getAltitudeAtMinute(tooltipMinute);
+
+    setTooltipData({
+      x: mouseX,
+      y: mouseY,
+      altitude: tooltipAltitude,
+      hour: tooltipHour,
+      day: tooltipDay
+    });
+    setShowTooltip(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+
   return (
-    <div 
+    <div
       ref={containerRef}
-      style={{ 
-        backgroundColor: '#1a1a1c', 
-        padding: '16px', 
+      role="application"
+      aria-label="Interactive Solar Altitude Visualization"
+      style={{
+        backgroundColor: '#1a1a1c',
+        padding: '16px',
         borderRadius: '8px',
         fontFamily: 'system-ui, -apple-system, sans-serif',
         color: '#e9e9ea',
@@ -255,16 +367,29 @@ const SunPositionViz = () => {
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-        <h2 style={{ fontSize: '16px', margin: 0, fontWeight: 600 }}>
-          Solar Altitude Throughout {viewMode === 'day' ? 'the Day' : 'the Year'}
-        </h2>
+        <div>
+          <h2 style={{ fontSize: '16px', margin: 0, fontWeight: 600 }}>
+            Solar Altitude Throughout {viewMode === 'day' ? 'the Day' : 'the Year'}
+          </h2>
+          <p style={{ fontSize: '10px', margin: '2px 0 0 0', color: '#a1a1a8' }}>
+            Use arrow keys to navigate, Space to play/pause
+          </p>
+        </div>
         
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#27272a', padding: '2px', borderRadius: '5px' }}>
+          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#27272a', padding: '2px', borderRadius: '5px' }} role="group" aria-label="Y-axis mode">
             {['dynamic', 'fixed', 'wide'].map(mode => (
               <button
                 key={mode}
                 onClick={() => setYAxisMode(mode)}
+                aria-pressed={yAxisMode === mode}
+                aria-label={`Y-axis ${mode === 'dynamic' ? 'automatic' : mode === 'fixed' ? 'fixed ±90°' : 'wide ±135°'} mode`}
+                onMouseOver={(e) => {
+                  if (yAxisMode !== mode) e.target.style.backgroundColor = 'rgba(106, 176, 243, 0.2)';
+                }}
+                onMouseOut={(e) => {
+                  if (yAxisMode !== mode) e.target.style.backgroundColor = 'transparent';
+                }}
                 style={{
                   padding: '3px 7px',
                   borderRadius: '4px',
@@ -273,6 +398,7 @@ const SunPositionViz = () => {
                   fontSize: '10px',
                   backgroundColor: yAxisMode === mode ? '#6ab0f3' : 'transparent',
                   color: yAxisMode === mode ? '#1a1a1c' : '#a1a1a8',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 {mode === 'dynamic' ? 'Auto' : mode === 'fixed' ? '±90°' : '±135°'}
@@ -280,11 +406,19 @@ const SunPositionViz = () => {
             ))}
           </div>
           
-          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#27272a', padding: '2px', borderRadius: '5px' }}>
+          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#27272a', padding: '2px', borderRadius: '5px' }} role="group" aria-label="View mode">
             {['day', 'year'].map(mode => (
               <button
                 key={mode}
                 onClick={() => { setViewMode(mode); setIsPlaying(false); }}
+                aria-pressed={viewMode === mode}
+                aria-label={`${mode === 'day' ? '24 Hours' : '365 Days'} view`}
+                onMouseOver={(e) => {
+                  if (viewMode !== mode) e.target.style.backgroundColor = 'rgba(140, 122, 230, 0.2)';
+                }}
+                onMouseOut={(e) => {
+                  if (viewMode !== mode) e.target.style.backgroundColor = 'transparent';
+                }}
                 style={{
                   padding: '3px 8px',
                   borderRadius: '4px',
@@ -293,6 +427,7 @@ const SunPositionViz = () => {
                   fontSize: '10px',
                   backgroundColor: viewMode === mode ? '#8c7ae6' : 'transparent',
                   color: viewMode === mode ? '#1a1a1c' : '#a1a1a8',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 {mode === 'day' ? '24 Hours' : '365 Days'}
@@ -303,7 +438,16 @@ const SunPositionViz = () => {
       </div>
       
       {/* Graph */}
-      <svg width={width} height={height} style={{ display: 'block' }}>
+      <svg
+        ref={svgRef}
+        width={width}
+        height={height}
+        style={{ display: 'block', cursor: 'crosshair' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        role="img"
+        aria-label={`Solar altitude graph showing altitude from ${yMin.toFixed(0)}° to ${yMax.toFixed(0)}°. Current altitude: ${currentAltitude.toFixed(1)}°`}
+      >
         <rect 
           x={padding.left} y={padding.top} 
           width={graphWidth} height={graphHeight} 
@@ -444,7 +588,64 @@ const SunPositionViz = () => {
         )}
         
         {/* Current position */}
-        <circle cx={currentX} cy={currentY} r="5" fill="#8c7ae6" stroke="#1a1a1c" strokeWidth="2" />
+        <circle cx={currentX} cy={currentY} r="5" fill="#8c7ae6" stroke="#1a1a1c" strokeWidth="2">
+          <title>Current position: {currentAltitude.toFixed(1)}° at {getDateTimeLabel()}</title>
+        </circle>
+
+        {/* Interactive tooltip */}
+        {showTooltip && (
+          <g>
+            {/* Crosshair */}
+            <line
+              x1={tooltipData.x}
+              y1={padding.top}
+              x2={tooltipData.x}
+              y2={padding.top + graphHeight}
+              stroke="#a1a1a8"
+              strokeWidth="1"
+              strokeDasharray="2,2"
+              opacity="0.5"
+            />
+            <line
+              x1={padding.left}
+              y1={altToY(tooltipData.altitude)}
+              x2={padding.left + graphWidth}
+              y2={altToY(tooltipData.altitude)}
+              stroke="#a1a1a8"
+              strokeWidth="1"
+              strokeDasharray="2,2"
+              opacity="0.5"
+            />
+            {/* Tooltip box */}
+            <g transform={`translate(${Math.min(tooltipData.x + 10, width - 120)}, ${Math.max(20, Math.min(tooltipData.y - 30, height - 60))})`}>
+              <rect
+                x="0"
+                y="0"
+                width="110"
+                height="45"
+                fill="#27272a"
+                stroke="#6ab0f3"
+                strokeWidth="1.5"
+                rx="4"
+                opacity="0.95"
+              />
+              <text x="6" y="15" fill="#f4d03f" fontSize="11" fontWeight="500">
+                {tooltipData.altitude.toFixed(1)}°
+              </text>
+              <text x="6" y="28" fill="#e9e9ea" fontSize="9">
+                {viewMode === 'day'
+                  ? `${Math.floor(tooltipData.hour)}:${Math.round((tooltipData.hour % 1) * 60).toString().padStart(2, '0')}`
+                  : (() => {
+                      const date = new Date(2024, 0, tooltipData.day);
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    })()}
+              </text>
+              <text x="6" y="40" fill="#a1a1a8" fontSize="8">
+                {tooltipData.altitude >= 0 ? 'Above horizon' : 'Below horizon'}
+              </text>
+            </g>
+          </g>
+        )}
         
         {/* Y-axis label */}
         <text x={10} y={padding.top + graphHeight / 2} fill="#a1a1a8" fontSize="10" textAnchor="middle" 
@@ -469,6 +670,8 @@ const SunPositionViz = () => {
       }}>
         <button
           onClick={() => setIsPlaying(!isPlaying)}
+          aria-label={isPlaying ? 'Pause animation' : 'Play animation'}
+          title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
           style={{
             width: '28px', height: '28px',
             borderRadius: '5px',
@@ -481,20 +684,27 @@ const SunPositionViz = () => {
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            transition: 'background-color 0.2s ease',
           }}
         >
           {isPlaying ? '⏸' : '▶'}
         </button>
         
         <div style={{ flex: 1, minWidth: 0 }}>
-          <input 
-            type="range" 
-            min={0} 
-            max={totalMinutesInYear - 1} 
+          <input
+            type="range"
+            min={0}
+            max={totalMinutesInYear - 1}
             step={15}
             value={minuteOfYear}
             onChange={(e) => setMinuteOfYear(parseInt(e.target.value, 10))}
-            style={{ width: '100%', accentColor: '#f4d03f', margin: 0 }}
+            aria-label="Time navigation slider"
+            aria-valuetext={getDateTimeLabel()}
+            aria-valuemin={0}
+            aria-valuemax={totalMinutesInYear - 1}
+            aria-valuenow={minuteOfYear}
+            title="Use Left/Right arrows to navigate. Hold Shift for larger steps."
+            style={{ width: '100%', accentColor: '#f4d03f', margin: 0, cursor: 'pointer' }}
           />
         </div>
         
@@ -503,10 +713,72 @@ const SunPositionViz = () => {
         </span>
       </div>
       
+      {/* Compass indicator (day view only) */}
+      {viewMode === 'day' && currentAltitude > -18 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 10px',
+          backgroundColor: '#27272a',
+          borderRadius: '5px',
+          marginBottom: '8px',
+          fontSize: '11px'
+        }}>
+          <span style={{ color: '#a1a1a8' }}>Sun Direction:</span>
+          <div style={{
+            position: 'relative',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            border: '2px solid #393941',
+            backgroundColor: '#1a1a1c'
+          }}>
+            {/* Compass cardinal points */}
+            <div style={{ position: 'absolute', top: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8', fontWeight: 600 }}>N</div>
+            <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>E</div>
+            <div style={{ position: 'absolute', bottom: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8' }}>S</div>
+            <div style={{ position: 'absolute', left: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>W</div>
+            {/* Sun indicator */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              width: '2px',
+              height: '16px',
+              backgroundColor: '#f4d03f',
+              transformOrigin: 'bottom center',
+              transform: `translate(-50%, -100%) rotate(${currentAzimuth}deg)`,
+              transition: 'transform 0.3s ease'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '-3px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#f4d03f',
+                boxShadow: '0 0 4px #f4d03f'
+              }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ color: '#4ade80', fontWeight: 500 }}>
+              {currentAzimuth.toFixed(0)}° {getCardinalDirection(currentAzimuth)}
+            </span>
+            <span style={{ color: '#a1a1a8', fontSize: '9px' }}>
+              {currentAltitude.toFixed(1)}° elevation
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Time presets row */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '6px',
         marginBottom: '12px'
@@ -517,6 +789,18 @@ const SunPositionViz = () => {
             <button
               key={p.label}
               onClick={() => setMinuteOfYear(p.minute)}
+              aria-label={`Jump to ${p.label}`}
+              title={`Jump to ${p.label}`}
+              onMouseOver={(e) => {
+                if (Math.abs(dayOfYear - p.day) >= 5) {
+                  e.target.style.backgroundColor = 'rgba(244, 208, 63, 0.1)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (Math.abs(dayOfYear - p.day) >= 5) {
+                  e.target.style.backgroundColor = '#27272a';
+                }
+              }}
               style={{
                 padding: '3px 8px',
                 borderRadius: '4px',
@@ -525,6 +809,7 @@ const SunPositionViz = () => {
                 fontSize: '10px',
                 backgroundColor: Math.abs(dayOfYear - p.day) < 5 ? 'rgba(244, 208, 63, 0.25)' : '#27272a',
                 color: Math.abs(dayOfYear - p.day) < 5 ? '#f4d03f' : '#a1a1a8',
+                transition: 'all 0.15s ease',
               }}
             >
               {p.label}
@@ -538,6 +823,18 @@ const SunPositionViz = () => {
             <button
               key={p.label}
               onClick={() => setTimeOfDay(p.hour)}
+              aria-label={`Jump to ${p.label}`}
+              title={`Set time to ${p.label} (${p.hour}:00)`}
+              onMouseOver={(e) => {
+                if (Math.abs(hourOfDay - p.hour) >= 1) {
+                  e.target.style.backgroundColor = 'rgba(140, 122, 230, 0.1)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (Math.abs(hourOfDay - p.hour) >= 1) {
+                  e.target.style.backgroundColor = '#27272a';
+                }
+              }}
               style={{
                 padding: '3px 8px',
                 borderRadius: '4px',
@@ -546,6 +843,7 @@ const SunPositionViz = () => {
                 fontSize: '10px',
                 backgroundColor: Math.abs(hourOfDay - p.hour) < 1 ? 'rgba(140, 122, 230, 0.25)' : '#27272a',
                 color: Math.abs(hourOfDay - p.hour) < 1 ? '#8c7ae6' : '#a1a1a8',
+                transition: 'all 0.15s ease',
               }}
             >
               {p.label}
@@ -555,31 +853,54 @@ const SunPositionViz = () => {
       </div>
       
       {/* Stats bar */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '12px', 
-        flexWrap: 'wrap', 
-        padding: '8px 10px',
-        backgroundColor: '#232334',
-        borderRadius: '5px',
-        fontSize: '11px',
-        marginBottom: '12px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+          padding: '8px 10px',
+          backgroundColor: '#232334',
+          borderRadius: '5px',
+          fontSize: '11px',
+          marginBottom: '12px'
+        }}
+        role="status"
+        aria-live="polite"
+        aria-label="Current solar statistics"
+      >
         <div>
           <span style={{ color: '#a1a1a8' }}>Altitude: </span>
-          <span style={{ color: currentAltitude >= 0 ? '#f4d03f' : '#6ab0f3', fontWeight: 500 }}>
+          <span
+            style={{ color: currentAltitude >= 0 ? '#f4d03f' : '#6ab0f3', fontWeight: 500 }}
+            title={currentAltitude >= 0 ? 'Sun is above the horizon' : 'Sun is below the horizon'}
+          >
             {currentAltitude.toFixed(1)}°
           </span>
         </div>
         <div>
           <span style={{ color: '#a1a1a8' }}>Declination: </span>
-          <span>{declination >= 0 ? '+' : ''}{declination.toFixed(1)}°</span>
+          <span title={`Solar declination: ${declination >= 0 ? 'Northern' : 'Southern'} hemisphere`}>
+            {declination >= 0 ? '+' : ''}{declination.toFixed(1)}°
+          </span>
         </div>
+        {viewMode === 'day' && currentAltitude > -18 && (
+          <div>
+            <span style={{ color: '#a1a1a8' }}>Azimuth: </span>
+            <span
+              style={{ color: '#4ade80', fontWeight: 500 }}
+              title={`Sun direction: ${currentAzimuth.toFixed(1)}° from North`}
+            >
+              {currentAzimuth.toFixed(0)}° {getCardinalDirection(currentAzimuth)}
+            </span>
+          </div>
+        )}
         {viewMode === 'day' && (
           <>
             <div>
               <span style={{ color: '#a1a1a8' }}>Daylight: </span>
-              <span style={{ color: '#8c7ae6' }}>{daylightHours.toFixed(1)}h</span>
+              <span style={{ color: '#8c7ae6' }} title={`${daylightHours.toFixed(1)} hours of daylight`}>
+                {daylightHours.toFixed(1)}h
+              </span>
             </div>
             {dayType === 'normal' && sunrisePoint && (
               <div>
@@ -620,10 +941,19 @@ const SunPositionViz = () => {
           
           {/* Visual latitude bar with markers */}
           <div style={{ position: 'relative', height: '20px', marginBottom: '4px' }}>
-            <input 
-              type="range" min={-90} max={90} value={latitude}
+            <input
+              type="range"
+              min={-90}
+              max={90}
+              value={latitude}
               onChange={(e) => setLatitude(parseInt(e.target.value, 10))}
-              style={{ width: '100%', accentColor: '#8c7ae6', position: 'absolute', top: 0 }}
+              aria-label="Latitude slider"
+              aria-valuetext={`${latitude}° ${latitude >= 0 ? 'North' : 'South'}`}
+              aria-valuemin={-90}
+              aria-valuemax={90}
+              aria-valuenow={latitude}
+              title="Use Up/Down arrows to adjust. Hold Shift for steps of 10°."
+              style={{ width: '100%', accentColor: '#8c7ae6', position: 'absolute', top: 0, cursor: 'pointer' }}
             />
             {/* Tropic markers */}
             {axialTilt > 0 && (
@@ -699,10 +1029,20 @@ const SunPositionViz = () => {
             </span>
           </div>
           
-          <input 
-            type="range" min={0} max={90} step={0.1} value={axialTilt}
+          <input
+            type="range"
+            min={0}
+            max={90}
+            step={0.1}
+            value={axialTilt}
             onChange={(e) => setAxialTilt(parseFloat(e.target.value))}
-            style={{ width: '100%', accentColor: '#6ab0f3', marginBottom: '4px' }}
+            aria-label="Axial tilt slider"
+            aria-valuetext={`${axialTilt.toFixed(1)} degrees`}
+            aria-valuemin={0}
+            aria-valuemax={90}
+            aria-valuenow={axialTilt}
+            title="Adjust planetary axial tilt (obliquity)"
+            style={{ width: '100%', accentColor: '#6ab0f3', marginBottom: '4px', cursor: 'pointer' }}
           />
           
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
@@ -725,33 +1065,95 @@ const SunPositionViz = () => {
         </div>
       </div>
       
-      {/* Educational note */}
+      {/* Educational notes */}
       {axialTilt === 0 && (
-        <div style={{ 
-          marginTop: '12px', 
-          padding: '8px 10px', 
-          backgroundColor: '#27272a', 
-          borderRadius: '5px',
-          borderLeft: '3px solid #6ab0f3',
-          fontSize: '11px',
-          color: '#a1a1a8'
-        }}>
-          <strong style={{ color: '#6ab0f3' }}>No axial tilt:</strong> Every location has exactly 12 hours of daylight year-round. No seasons exist.
+        <div
+          style={{
+            marginTop: '12px',
+            padding: '8px 10px',
+            backgroundColor: '#27272a',
+            borderRadius: '5px',
+            borderLeft: '3px solid #6ab0f3',
+            fontSize: '11px',
+            color: '#a1a1a8'
+          }}
+          role="note"
+          aria-label="Educational information about zero axial tilt"
+        >
+          <strong style={{ color: '#6ab0f3' }}>No axial tilt:</strong> Every location has exactly 12 hours of daylight year-round. No seasons exist. The sun's daily path remains identical throughout the year.
         </div>
       )}
-      
+
       {axialTilt > 50 && (
-        <div style={{ 
-          marginTop: '12px', 
-          padding: '8px 10px', 
-          backgroundColor: '#27272a', 
-          borderRadius: '5px',
-          borderLeft: '3px solid #e67e22',
-          fontSize: '11px',
-          color: '#a1a1a8'
-        }}>
-          <strong style={{ color: '#e67e22' }}>Extreme tilt:</strong> The Arctic Circle is now at {arcticLat.toFixed(0)}° latitude. 
-          Most of the planet experiences midnight sun or polar night seasonally.
+        <div
+          style={{
+            marginTop: '12px',
+            padding: '8px 10px',
+            backgroundColor: '#27272a',
+            borderRadius: '5px',
+            borderLeft: '3px solid #e67e22',
+            fontSize: '11px',
+            color: '#a1a1a8'
+          }}
+          role="note"
+          aria-label="Educational information about extreme axial tilt"
+        >
+          <strong style={{ color: '#e67e22' }}>Extreme tilt:</strong> The Arctic Circle is now at {arcticLat.toFixed(0)}° latitude.
+          Most of the planet experiences midnight sun or polar night seasonally. Extreme seasonal variation would make this planet challenging for life.
+        </div>
+      )}
+
+      {viewMode === 'day' && dayType === 'midnight-sun' && (
+        <div
+          style={{
+            marginTop: '12px',
+            padding: '8px 10px',
+            backgroundColor: '#27272a',
+            borderRadius: '5px',
+            borderLeft: '3px solid #f4d03f',
+            fontSize: '11px',
+            color: '#a1a1a8'
+          }}
+          role="note"
+          aria-label="Midnight sun information"
+        >
+          <strong style={{ color: '#f4d03f' }}>Midnight Sun:</strong> At this latitude and date, the sun never sets. This phenomenon occurs inside the Arctic/Antarctic circles during summer months. The sun circles the horizon instead of dipping below it.
+        </div>
+      )}
+
+      {viewMode === 'day' && dayType === 'polar-night' && (
+        <div
+          style={{
+            marginTop: '12px',
+            padding: '8px 10px',
+            backgroundColor: '#27272a',
+            borderRadius: '5px',
+            borderLeft: '3px solid #60a5fa',
+            fontSize: '11px',
+            color: '#a1a1a8'
+          }}
+          role="note"
+          aria-label="Polar night information"
+        >
+          <strong style={{ color: '#60a5fa' }}>Polar Night:</strong> At this latitude and date, the sun never rises above the horizon. This occurs inside the Arctic/Antarctic circles during winter months. Twilight may still be visible, but the sun remains below the horizon all day.
+        </div>
+      )}
+
+      {latitude === 0 && Math.abs(declination) < 2 && viewMode === 'day' && (
+        <div
+          style={{
+            marginTop: '12px',
+            padding: '8px 10px',
+            backgroundColor: '#27272a',
+            borderRadius: '5px',
+            borderLeft: '3px solid #4ade80',
+            fontSize: '11px',
+            color: '#a1a1a8'
+          }}
+          role="note"
+          aria-label="Equator at equinox information"
+        >
+          <strong style={{ color: '#4ade80' }}>Equator at Equinox:</strong> The sun passes directly overhead (90° altitude) at noon. This is one of only two days per year when the sun's path crosses the zenith at the equator. Day and night are exactly 12 hours each.
         </div>
       )}
     </div>
