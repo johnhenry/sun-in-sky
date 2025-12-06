@@ -413,7 +413,9 @@ const SunPositionViz = () => {
         fontFamily: 'system-ui, -apple-system, sans-serif',
         color: '#e9e9ea',
         width: '100%',
-        boxSizing: 'border-box'
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}
     >
       {/* Header */}
@@ -659,10 +661,19 @@ const SunPositionViz = () => {
           <circle cx={sunsetPoint.x} cy={sunsetPoint.y} r="4" fill="#e25f73" />
         )}
         
-        {/* Current position */}
-        <circle cx={currentX} cy={currentY} r="5" fill="#8c7ae6" stroke="#1a1a1c" strokeWidth="2">
-          <title>Current position: {currentAltitude.toFixed(1)}° at {getDateTimeLabel()}</title>
-        </circle>
+        {/* Current position - sun emoji marker */}
+        <text
+          x={currentX}
+          y={currentY}
+          fontSize="28"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          style={{ cursor: 'pointer', filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}
+          role="img"
+          aria-label={`Current sun position: ${currentAltitude.toFixed(1)}° at ${getDateTimeLabel()}`}
+        >
+          ☀️
+        </text>
 
         {/* Interactive tooltip */}
         {showTooltip && (
