@@ -22,11 +22,11 @@ By the end of this lesson, students will be able to:
 - Optional: Globe or ball and flashlight
 
 ### Vocabulary
-- **Sunrise**: The time when the sun first appears above the horizon in the morning
-- **Sunset**: The time when the sun disappears below the horizon in the evening
-- **Horizon**: The line where the sky appears to meet the ground
-- **Altitude**: How high the sun is in the sky (measured in degrees)
-- **Noon**: When the sun is at its highest point in the sky (usually around 12:00)
+- **Sunrise**: The moment when the sun's upper edge first appears at the horizon (altitude = 0°)
+- **Sunset**: The moment when the sun's upper edge disappears below the horizon (altitude = 0°)
+- **Horizon**: The line where the sky appears to meet the ground (0° altitude)
+- **Altitude**: How high the sun is in the sky (measured in degrees, 0° = horizon, 90° = directly overhead)
+- **Noon**: When the sun is at its highest point in the sky (solar noon, usually close to 12:00 clock time)
 
 ### Introduction (10 minutes)
 
@@ -121,7 +121,7 @@ Name: _________________ Date: _____________
 
 Sun's Journey Across the Sky
 
-1. At sunrise, the sun is:  ☐ Above the horizon  ☐ Below the horizon
+1. At sunrise, the sun is:  ☐ On the horizon (0°)  ☐ High in the sky
 
 2. At noon (12:00), the sun is at its _________ point in the sky.
 
@@ -227,7 +227,7 @@ By the end of this lesson, students will be able to:
 - **Seasons**: The four divisions of the year (spring, summer, fall, winter) with different weather patterns
 - **Equinox**: A day when daylight and nighttime are equal (about 12 hours each) - happens in March and September
 - **Solstice**: A day when we have the most (summer) or least (winter) daylight - happens in June and December
-- **Tilt**: Earth is tilted on its axis at 23.4 degrees, which causes seasons
+- **Tilt**: Earth is tilted on its axis at 23.45 degrees, which causes seasons
 - **Solar altitude**: How high the sun gets in the sky (higher = warmer temperatures)
 
 ### Introduction (10 minutes)
@@ -253,7 +253,7 @@ Take student predictions. Common (incorrect) answer: "Because Earth is closer to
 **Setup**:
 - Open Sun in Sky app in "Day" view
 - Set latitude to 45° (Mid) - this is about where most US students live
-- Keep axial tilt at 23.4° (Earth's tilt)
+- Keep axial tilt at 23.45° (Earth's tilt)
 
 **Investigation - March Equinox (First Day of Spring)**:
 1. Click "Mar Equinox" button
@@ -482,8 +482,8 @@ By the end of this lesson, students will be able to:
 - **Equator**: An imaginary line around the middle of Earth at 0° latitude
 - **North Pole**: The northernmost point on Earth at 90° North latitude
 - **South Pole**: The southernmost point on Earth at 90° South latitude
-- **Tropics**: Special latitude lines at 23.4° North and South where the sun can be directly overhead
-- **Arctic Circle**: Special latitude line at 66.6° North (and Antarctic at 66.6° South) where midnight sun occurs
+- **Tropics**: Special latitude lines at 23.45° North and South where the sun can be directly overhead
+- **Arctic Circle**: Special latitude line at 66.55° North (and Antarctic at 66.55° South) where midnight sun occurs
 
 ### Introduction (10 minutes)
 
@@ -581,7 +581,7 @@ Give pairs of students 5-6 minutes to explore latitudes freely:
 1. "Find a latitude where summer day is exactly 18 hours long"
 2. "Find the latitude that has the biggest difference between summer and winter daylight"
 3. "Find a latitude where you get midnight sun in summer"
-4. "Test the Tropics (23.4°) - what's special about this latitude?"
+4. "Test the Tropics (23.45°) - what's special about this latitude?"
 
 **Share Discoveries**: Have 2-3 pairs share something interesting they found
 
@@ -1144,7 +1144,7 @@ This lesson sets up perfectly for a "Where Should We Build?" project where stude
 - **Play/Pause**: Animates the sun's movement (purple ▶ / red ⏸)
 - **Date Presets**: Mar Equinox, Jun Solstice, Sep Equinox, Dec Solstice
 - **Time Presets**: Midnight, Dawn, Noon, Dusk
-- **Latitude Presets**: Equator (0°), Tropic (23.4°), Mid (45°), Arctic (66.6°), Pole (90°)
+- **Latitude Presets**: Equator (0°), Tropic (23.45°), Mid (45°), Arctic (66.55°), Pole (90°)
 
 **Reading the Graph**:
 - **Orange dashed line**: The horizon (0°)
@@ -1158,7 +1158,7 @@ This lesson sets up perfectly for a "Where Should We Build?" project where stude
 **Key Numbers to Watch**:
 - **Altitude**: How high the sun is (0° = horizon, 90° = directly overhead)
 - **Daylight Hours**: Total time sun is above horizon
-- **Declination**: Sun's position relative to equator (-23.4° to +23.4°)
+- **Declination**: Sun's position relative to equator (-23.45° to +23.45°)
 
 ### Common Questions & Simple Answers
 
@@ -1175,7 +1175,7 @@ A: At latitudes above the Arctic Circle (66.6°), Earth's tilt during summer mea
 A: Yes! On the equinox (March 20 and September 22), everywhere on Earth has about 12 hours of daylight.
 
 **Q: Why are there tropics and arctic circles?**
-A: They're mathematical results of Earth's 23.4° tilt. The tropics (at ±23.4°) mark where the sun can be directly overhead. The arctic circles (at ±66.6°) mark where midnight sun and polar night occur.
+A: They're mathematical results of Earth's 23.45° tilt. The tropics (at ±23.45°) mark where the sun can be directly overhead. The arctic circles (at ±66.55°) mark where midnight sun and polar night occur.
 
 ### Vocabulary Support - Simple Definitions for Students
 
@@ -1183,7 +1183,7 @@ A: They're mathematical results of Earth's 23.4° tilt. The tropics (at ±23.4°
 
 **Equator**: The imaginary line around the middle of Earth, exactly between the North and South Poles
 
-**Equinox**: A special day (happens twice a year) when everywhere on Earth has exactly 12 hours of daylight and 12 hours of nighttime
+**Equinox**: A special day (happens twice a year) when everywhere on Earth has approximately 12 hours of daylight and 12 hours of nighttime
 
 **Horizon**: The line where the sky meets the ground (when the sun is at the horizon, it's sunrise or sunset)
 

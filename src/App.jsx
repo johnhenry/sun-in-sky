@@ -113,8 +113,11 @@ const SunPositionViz = () => {
     return getAltitude(hour, decl);
   };
   
+  // FIX #2: Ensure path generation works at poles
   const computeDayAltitudes = (decl) => {
     const points = [];
+    // At the poles (latitude ±90), sun altitude is constant throughout the day
+    // It equals the declination. We still need to generate points for rendering.
     for (let i = 0; i <= 240; i++) {
       const hour = i / 10;
       points.push({ hour, altitude: getAltitude(hour, decl) });
@@ -181,7 +184,8 @@ const SunPositionViz = () => {
     }));
   }, [equinoxAltitudes, graphWidth, yMax, yRange, viewMode]);
   
-  const pathD = curveData.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  // FIX #2: Ensure path is always generated even at poles where altitude is constant
+  const pathD = curveData.length > 0 ? curveData.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') : '';
   const equinoxPathD = equinoxCurve ? equinoxCurve.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') : '';
   
   const horizonY = altToY(0);
@@ -212,21 +216,30 @@ const SunPositionViz = () => {
     : (curveData.filter(p => p.altitude >= 0).length / curveData.length) * 24
   ) : null;
   
-  // Presets that adapt to current tilt
+  // FIX #5: All planet axial tilts as bookmarks (sorted 0° to 90°)
   const tiltPresets = [
-    { value: 0, label: '0° (none)' },
-    { value: 23.45, label: '23.4° (Earth)' },
-    { value: 25.19, label: '25.2° (Mars)' },
-    { value: 82.23, label: '82.2° (Uranus)' },
+    { value: 0.034, label: '0.0° Mercury' },
+    { value: 2.6, label: '2.6° Venus' },
+    { value: 3.1, label: '3.1° Jupiter' },
+    { value: 23.4, label: '23.4° Earth' },
+    { value: 25.2, label: '25.2° Mars' },
+    { value: 26.7, label: '26.7° Saturn' },
+    { value: 28.3, label: '28.3° Neptune' },
+    { value: 82.2, label: '82.2° Uranus' },
+    { value: 90, label: '90° Extreme' },
   ];
   
-  const latPresets = useMemo(() => [
+  // FIX #3: Fixed latitude bookmarks with proper geographic labels
+  const latPresets = [
+    { value: -90, label: '-90° South Pole' },
+    { value: -66.5, label: '-66.5° Antarctic Circle' },
+    { value: -23.5, label: '-23.5° Tropic of Capricorn' },
     { value: 0, label: '0° Equator' },
-    { value: Math.round(tropicLat), label: `${Math.round(tropicLat)}° Tropic` },
-    { value: 45, label: '45° Mid' },
-    { value: Math.round(arcticLat), label: `${Math.round(arcticLat)}° Arctic` },
-    { value: 90, label: '90° Pole' },
-  ], [tropicLat, arcticLat]);
+    { value: 23.5, label: '23.5° Tropic of Cancer' },
+    { value: 45, label: '45° Mid-Latitudes' },
+    { value: 66.5, label: '66.5° Arctic Circle' },
+    { value: 90, label: '90° North Pole' },
+  ];
   
   // Key dates with accurate day numbers
   const datePresets = [
@@ -576,8 +589,8 @@ const SunPositionViz = () => {
           <path d={equinoxPathD} fill="none" stroke="#a1a1a8" strokeWidth="1" strokeDasharray="3,3" opacity="0.35" clipPath="url(#graphClip)" />
         )}
         
-        {/* Sun path */}
-        <path d={pathD} fill="none" stroke="url(#sunGradient)" strokeWidth={viewMode === 'day' ? 2.5 : 1.2} clipPath="url(#graphClip)" />
+        {/* Sun path - FIX #2: Always render, even at poles where it's a horizontal line */}
+        {pathD && <path d={pathD} fill="none" stroke="url(#sunGradient)" strokeWidth={viewMode === 'day' ? 2.5 : 1.2} clipPath="url(#graphClip)" />}
         
         {/* Sunrise/sunset markers */}
         {viewMode === 'day' && sunrisePoint && (
@@ -713,8 +726,8 @@ const SunPositionViz = () => {
         </span>
       </div>
       
-      {/* Compass indicator (day view only) */}
-      {viewMode === 'day' && currentAltitude > -18 && (
+      {/* Compass indicator (day view only) - FIX #1: Always visible, shows sun azimuth even below horizon */}
+      {viewMode === 'day' && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -883,7 +896,7 @@ const SunPositionViz = () => {
             {declination >= 0 ? '+' : ''}{declination.toFixed(1)}°
           </span>
         </div>
-        {viewMode === 'day' && currentAltitude > -18 && (
+        {viewMode === 'day' && (
           <div>
             <span style={{ color: '#a1a1a8' }}>Azimuth: </span>
             <span
@@ -999,21 +1012,32 @@ const SunPositionViz = () => {
             )}
           </div>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
+          {/* FIX #4: Latitude bookmarks anchored to left in a column layout */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '9px', marginTop: '4px' }}>
             {latPresets.map(p => (
-              <span 
+              <button
                 key={p.label}
                 onClick={() => setLatitude(p.value)}
-                style={{ 
-                  cursor: 'pointer', 
-                  padding: '1px 4px',
+                style={{
+                  cursor: 'pointer',
+                  padding: '3px 6px',
                   borderRadius: '3px',
-                  backgroundColor: Math.abs(latitude - p.value) < 2 ? 'rgba(140, 122, 230, 0.2)' : 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  backgroundColor: Math.abs(latitude - p.value) < 2 ? 'rgba(140, 122, 230, 0.25)' : '#27272a',
                   color: Math.abs(latitude - p.value) < 2 ? '#8c7ae6' : '#a1a1a8',
+                  fontSize: '9px',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseOver={(e) => {
+                  if (Math.abs(latitude - p.value) >= 2) e.target.style.backgroundColor = 'rgba(140, 122, 230, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  if (Math.abs(latitude - p.value) >= 2) e.target.style.backgroundColor = '#27272a';
                 }}
               >
                 {p.label}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -1045,21 +1069,32 @@ const SunPositionViz = () => {
             style={{ width: '100%', accentColor: '#6ab0f3', marginBottom: '4px', cursor: 'pointer' }}
           />
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
+          {/* FIX #6: Axial tilt bookmarks anchored to left in a column layout */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '9px', marginTop: '4px' }}>
             {tiltPresets.map(p => (
-              <span 
+              <button
                 key={p.label}
                 onClick={() => setAxialTilt(p.value)}
-                style={{ 
-                  cursor: 'pointer', 
-                  padding: '1px 4px',
+                style={{
+                  cursor: 'pointer',
+                  padding: '3px 6px',
                   borderRadius: '3px',
-                  backgroundColor: Math.abs(axialTilt - p.value) < 0.5 ? 'rgba(106, 176, 243, 0.2)' : 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  backgroundColor: Math.abs(axialTilt - p.value) < 0.5 ? 'rgba(106, 176, 243, 0.25)' : '#27272a',
                   color: Math.abs(axialTilt - p.value) < 0.5 ? '#6ab0f3' : '#a1a1a8',
+                  fontSize: '9px',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseOver={(e) => {
+                  if (Math.abs(axialTilt - p.value) >= 0.5) e.target.style.backgroundColor = 'rgba(106, 176, 243, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  if (Math.abs(axialTilt - p.value) >= 0.5) e.target.style.backgroundColor = '#27272a';
                 }}
               >
                 {p.label}
-              </span>
+              </button>
             ))}
           </div>
         </div>

@@ -205,7 +205,7 @@ print(solar_altitude(45, 23.45, 12))  # Should give ~68.45°
 1. **Derivation Challenge (15 pts):** Re-derive the solar altitude formula starting from the spherical law of cosines. Show all steps and explain the physical meaning of each substitution.
 
 2. **Special Cases (10 pts):**
-   - Prove that at the equator (φ = 0°), the maximum altitude equals 90° + δ
+   - Prove that at the equator (φ = 0°), the maximum altitude equals 90° - δ
    - Show that at the North Pole (φ = 90°), altitude = δ for all hours
 
 3. **Critical Analysis (15 pts):** The formula assumes a spherical Earth and point-source sun. Research and explain three real-world effects not captured by this model (atmospheric refraction, Earth's ellipticity, solar disk diameter). Quantify each effect's magnitude.

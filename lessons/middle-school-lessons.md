@@ -147,7 +147,7 @@ Students will compare solar altitude at noon for five different latitudes, all o
 **Control Variables:**
 - Date: March Equinox (declination = 0°)
 - Time: Noon (12:00)
-- Axial tilt: 23.4° (Earth)
+- Axial tilt: 23.45° (Earth)
 
 **Independent Variable:** Latitude
 **Dependent Variable:** Maximum solar altitude (at noon)
@@ -157,9 +157,9 @@ Students will compare solar altitude at noon for five different latitudes, all o
 | Latitude | Location Type | Max Altitude at Noon | Calculation: 90° - Latitude | Difference |
 |----------|--------------|---------------------|----------------------------|------------|
 | 0° | Equator | | | |
-| 23.4° | Tropic | | | |
+| 23.45° | Tropic | | | |
 | 45° | Mid-latitude | | | |
-| 66.6° | Arctic Circle | | | |
+| 66.55° | Arctic Circle | | | |
 | 90° | North Pole | | | |
 
 **Procedure:**
@@ -188,9 +188,9 @@ Students will compare solar altitude at noon for five different latitudes, all o
 |------|-------------|-------------------|---------------------|---------------------|
 | Jan 1 | 1 | (read from app) | | |
 | Mar Equinox | 80 | 0° | | 0° (baseline) |
-| Jun Solstice | 172 | +23.4° | | |
+| Jun Solstice | 172 | +23.45° | | |
 | Sep Equinox | 266 | 0° | | |
-| Dec Solstice | 355 | -23.4° | | |
+| Dec Solstice | 355 | -23.45° | | |
 
 **Analysis Questions:**
 1. On which date is the sun highest in the sky?
@@ -230,8 +230,8 @@ Students write a 1-2 page report answering:
 1. How does latitude affect solar altitude at noon on the equinox?
 2. How does solar declination affect maximum altitude?
 3. Using the formula: Max Altitude = 90° - |Latitude - Declination|, calculate expected noon altitude for:
-   - 40°N on June 21 (declination = +23.4°)
-   - 40°N on Dec 21 (declination = -23.4°)
+   - 40°N on June 21 (declination = +23.45°)
+   - 40°N on Dec 21 (declination = -23.45°)
    - 0° (equator) on any date with declination = +15°
 
 **Option 2: Design Challenge (Applied)**
@@ -418,16 +418,16 @@ Create a stop-motion video showing the sun's path across the sky:
 | 6:00 PM | 0° | Sunset |
 | 9:00 PM | -34° | Below horizon |
 
-**Daylight hours:** Exactly 12 hours (equinox characteristic)
+**Daylight hours:** Approximately 12 hours (equinox characteristic - slightly more due to atmospheric refraction)
 
 ### Part C: Latitude Comparison at Noon (Equinox)
 
 | Latitude | Max Altitude | 90° - Lat | Difference |
 |----------|-------------|-----------|------------|
 | 0° | 90° | 90° | 0° |
-| 23.4° | 66.6° | 66.6° | 0° |
+| 23.45° | 66.55° | 66.55° | 0° |
 | 45° | 45° | 45° | 0° |
-| 66.6° | 23.4° | 23.4° | 0° |
+| 66.55° | 23.45° | 23.45° | 0° |
 | 90° | 0° | 0° | 0° |
 
 ### Part D: Seasonal Changes at 45°N
@@ -436,9 +436,9 @@ Create a stop-motion video showing the sun's path across the sky:
 |------|------------|---------------|---------|
 | Jan 1 | ≈-23° | ≈22° | -23° |
 | Mar Equinox | 0° | 45° | 0° |
-| Jun Solstice | +23.4° | 68.4° | +23.4° |
+| Jun Solstice | +23.45° | 68.4° | +23.45° |
 | Sep Equinox | 0° | 45° | 0° |
-| Dec Solstice | -23.4° | 21.6° | -23.4° |
+| Dec Solstice | -23.45° | 21.6° | -23.45° |
 
 **Range:** 68.4° - 21.6° = 46.8° (approximately 2 × axial tilt)
 
@@ -555,7 +555,7 @@ Students systematically test latitudes and record results:
 | 60°N | | Yes / No | |
 | 63°N | | Yes / No | |
 | 66°N | | Yes / No | |
-| 66.6°N | | Yes / No | |
+| 66.55°N | | Yes / No | |
 | 67°N | | Yes / No | |
 | 70°N | | Yes / No | |
 | 75°N | | Yes / No | |
@@ -591,7 +591,7 @@ Students should discover that the Arctic Circle is at 66.55°N (90° - 23.45°),
 | Latitude | Maximum Altitude (at noon) | Does Sun Rise? | Daylight Hours |
 |----------|---------------------------|----------------|----------------|
 | 60°N | | Yes / No | |
-| 66.6°N | | Yes / No | |
+| 66.55°N | | Yes / No | |
 | 70°N | | Yes / No | |
 | 75°N | | Yes / No | |
 | 80°N | | Yes / No | |
@@ -606,7 +606,7 @@ Students should discover that the Arctic Circle is at 66.55°N (90° - 23.45°),
 **Mathematical Connection:**
 At the poles:
 - Summer solstice altitude = axial tilt (23.4°)
-- Winter solstice altitude = -axial tilt (-23.4°)
+- Winter solstice altitude = -axial tilt (-23.45°)
 - The sun circles the horizon without setting or rising!
 
 ## Main Activity - Day 2 (35 minutes)
@@ -831,7 +831,7 @@ Research early polar explorers:
 - Create a physical model with a styrofoam ball and flashlight for hands-on learning
 
 **Simplified Data Collection:**
-- Reduce number of latitudes to test (just 60°, 66.6°, 75°, 90°)
+- Reduce number of latitudes to test (just 60°, 66.55°, 75°, 90°)
 - Reduce number of dates to investigate (just solstices and equinoxes)
 - Provide partially completed data tables
 - Allow students to work in groups of 3-4
@@ -1019,10 +1019,10 @@ Instead of open-ended analysis, provide:
 | 60°N | ≈-4° | Yes | ≈18.5h |
 | 63°N | ≈-1° | Yes | ≈20.5h |
 | 66°N | ≈+0.5° | No | ≈24h |
-| 66.6°N | ≈+1° | No | 24h |
+| 66.55°N | ≈+1° | No | 24h |
 | 70°N | ≈+3° | No | 24h |
 | 80°N | ≈+13° | No | 24h |
-| 90°N | ≈+23.4° | No | 24h |
+| 90°N | ≈+23.45° | No | 24h |
 
 **Key Finding:** Arctic Circle begins at ≈66.55°N (90° - 23.45°)
 
@@ -1031,10 +1031,10 @@ Instead of open-ended analysis, provide:
 | Latitude | Max Altitude | Does Sun Rise? | Daylight |
 |----------|-------------|----------------|----------|
 | 60°N | ≈+6° | Yes | ≈5.5h |
-| 66.6°N | ≈-1° | No | 0h |
+| 66.55°N | ≈-1° | No | 0h |
 | 70°N | ≈-3° | No | 0h |
 | 80°N | ≈-13° | No | 0h |
-| 90°N | ≈-23.4° | No | 0h |
+| 90°N | ≈-23.45° | No | 0h |
 
 ### Part C: Daylight Hours Throughout Year
 
@@ -1991,7 +1991,7 @@ Students set each tilt value and observe the yellow (tropic) and blue (arctic) m
 **Calculation: Climate Zone Sizes**
 
 For Earth:
-- **Tropical zone**: From -23.4° to +23.4° = 46.8° total width
+- **Tropical zone**: From -23.45° to +23.45° = 46.8° total width
 - **Temperate zones**: From 23.4° to 66.55° (North and South) = 43.15° width each
 - **Polar zones**: From 66.55° to 90° (North and South) = 23.45° width each
 
@@ -2486,7 +2486,7 @@ Create a physical model showing:
 | Planet | Tilt | Tropic Lat | Arctic Lat | Climate Zones |
 |--------|------|-----------|-----------|---------------|
 | Mercury | 0° | 0° (none) | 90° (none) | All temperate (but no seasons) |
-| Earth | 23.4° | ±23.4° | ±66.6° | Balanced |
+| Earth | 23.45° | ±23.45° | ±66.55° | Balanced |
 | Mars | 25.2° | ±25.2° | ±64.8° | Similar to Earth |
 | Uranus | 82.2° | ±82.2° | ±7.8° | Almost all polar |
 | 45° Hypothetical | 45° | ±45° | ±45° | Tropics = Arctic (extreme!) |
