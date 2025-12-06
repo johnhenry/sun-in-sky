@@ -1,0 +1,1 @@
+sin(altitude) = sin(lat)·sin(δ) + cos(lat)·cos(δ)·cos(H)
