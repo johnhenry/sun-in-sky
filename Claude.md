@@ -39,10 +39,15 @@ The application answers: **"Where is the sun in the sky?"** by accounting for:
 
 **Visual Elements:**
 - Sun path curve (yellow-orange gradient)
+- Sun disk with glow effect at current position (3-layer gradient + highlight)
 - Horizon line (0° altitude)
-- Sunrise/sunset markers
-- Night region (below horizon)
-- Current position indicator
+- Sunrise/sunset markers (orange/red circles)
+- Twilight zones (day view only):
+  - Civil twilight: 0° to -6° (light blue)
+  - Nautical twilight: -6° to -12° (medium blue)
+  - Astronomical twilight: -12° to -18° (dark blue)
+  - True night: below -18° (deep darkness)
+- Current position indicator with glowing sun disk
 - Equinox reference curve (day view)
 - Season markers (year view)
 
@@ -336,6 +341,24 @@ src/
 
 **AR Sun Finder:** Mobile-only, experimental
 
+### Keyboard Shortcuts
+
+**Time Control:**
+- `Space`: Play/Pause animation
+- `←` (Left Arrow): Move back 1 hour (day view) or 1 day (year view)
+- `→` (Right Arrow): Move forward 1 hour (day view) or 1 day (year view)
+
+**Parameter Control:**
+- `↑` (Up Arrow): Increase latitude by 5°
+- `↓` (Down Arrow): Decrease latitude by 5°
+
+**View Control:**
+- `D`: Toggle Day/Year view mode
+- `Y`: Cycle through Y-axis modes (Dynamic → Fixed → Wide)
+- `Esc`: Close Learn and Challenge panels
+
+**Note:** Keyboard shortcuts are disabled when typing in input fields or when panels are open.
+
 ---
 
 ## Data Persistence
@@ -417,6 +440,34 @@ STORAGE_KEYS = {
 - ≤500px: Single letters ("J")
 
 **Control Layout:** Flexbox with wrapping for small screens
+
+### Mobile Optimizations
+
+**Viewport Meta Tags:**
+- `width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes`
+- Mobile web app capable (iOS and Android)
+- Apple mobile web app status bar style: black-translucent
+- Theme color: #1a1a1c (matches app background)
+
+**Progressive Web App Support:**
+- Installable on mobile home screens
+- Full-screen mode support
+- Native-like app experience
+
+### Accessibility Features
+
+**Reduced Motion Support:**
+- Detects `prefers-reduced-motion` media query
+- Automatically pauses animations when reduced motion is preferred
+- CSS transitions reduced to 0.01ms
+- JavaScript animations disabled
+- Respects system accessibility settings
+
+**Loading States:**
+- 3D Earth shows spinner during load
+- "Loading 3D Earth..." message
+- Smooth transition when scene is ready
+- Prevents interaction with incomplete visualizations
 
 ---
 
@@ -560,6 +611,14 @@ npm run deploy:vercel
 - WebGL support
 - JavaScript enabled
 - DeviceOrientation API (for AR mode)
+- Keyboard event support (for shortcuts)
+- CSS media queries (for reduced motion)
+- SVG rendering (for 2D graphs)
+
+**Accessibility:**
+- Supports `prefers-reduced-motion` media query
+- Keyboard navigation enabled
+- Responsive to system accessibility settings
 
 ---
 

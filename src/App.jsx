@@ -42,6 +42,10 @@ const SunPositionViz = () => {
   const svgRef = useRef(null);
   const compassRotationRef = useRef(0); // Track cumulative rotation for smooth compass animation
 
+  // Calculate time constants (needed before useEffects that reference them)
+  const minutesPerDay = dayLength * 60;
+  const totalMinutesInYear = yearLength * minutesPerDay;
+
   // Initialize localStorage on mount
   useEffect(() => {
     initializeStorage();
@@ -145,9 +149,6 @@ const SunPositionViz = () => {
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
 
-  const minutesPerDay = dayLength * 60;
-  const totalMinutesInYear = yearLength * minutesPerDay;
-
   // Clamp minuteOfYear to valid range when parameters change
   useEffect(() => {
     if (minuteOfYear >= totalMinutesInYear) {
@@ -155,7 +156,7 @@ const SunPositionViz = () => {
     }
   }, [totalMinutesInYear]);
 
-  // Animation effect - placed after totalMinutesInYear declaration
+  // Animation effect
   useEffect(() => {
     if (isPlaying) {
       const step = viewMode === 'day' ? 15 : 120;
