@@ -1690,6 +1690,8 @@ const SunPositionViz = () => {
               <button
                 key={p.label}
                 onClick={() => setLatitude(p.value)}
+                aria-label={`Set latitude to ${p.label}`}
+                title={`Set latitude to ${p.value}°`}
                 style={{
                   cursor: 'pointer',
                   padding: '3px 6px',
@@ -1784,6 +1786,11 @@ const SunPositionViz = () => {
                 value={axialTilt}
                 onChange={(e) => setAxialTilt(parseFloat(e.target.value))}
                 aria-label="Axial tilt slider"
+                aria-valuetext={`${axialTilt.toFixed(1)} degrees`}
+                aria-valuemin={0}
+                aria-valuemax={90}
+                aria-valuenow={axialTilt}
+                title="Planetary axial tilt. Affects seasons and polar regions."
                 style={{ width: '100%', accentColor: '#6ab0f3', cursor: 'pointer', marginRight: containerWidth < 600 ? '0' : '0' }}
               />
             </div>
@@ -1801,6 +1808,11 @@ const SunPositionViz = () => {
                 value={dayLength}
                 onChange={(e) => setDayLength(parseFloat(e.target.value))}
                 aria-label="Day length slider"
+                aria-valuetext={`${dayLength.toFixed(1)} hours per day`}
+                aria-valuemin={1}
+                aria-valuemax={200}
+                aria-valuenow={dayLength}
+                title="Hours per day. Earth is 24 hours."
                 style={{ width: '100%', accentColor: '#4ade80', cursor: 'pointer', marginRight: containerWidth < 600 ? '0' : '0' }}
               />
             </div>
@@ -1818,6 +1830,11 @@ const SunPositionViz = () => {
                 value={yearLength}
                 onChange={(e) => setYearLength(parseInt(e.target.value))}
                 aria-label="Year length slider"
+                aria-valuetext={`${yearLength} days per year`}
+                aria-valuemin={10}
+                aria-valuemax={1000}
+                aria-valuenow={yearLength}
+                title="Days per year. Earth is 365 days."
                 style={{ width: '100%', accentColor: '#fb923c', cursor: 'pointer', marginRight: containerWidth < 600 ? '0' : '0' }}
               />
             </div>
