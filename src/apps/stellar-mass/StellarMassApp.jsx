@@ -797,8 +797,8 @@ export default function StellarMassApp() {
           </label>
           <input
             type="range"
-            min={minLog}
-            max={maxLog}
+            min={minLogMass}
+            max={maxLogMass}
             step={0.05}
             value={logMass}
             onChange={(e) => setLogMass(parseFloat(e.target.value))}
