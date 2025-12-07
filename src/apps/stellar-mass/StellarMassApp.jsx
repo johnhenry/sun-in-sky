@@ -110,26 +110,28 @@ function getRadiusRange(mass, objectType) {
   const massKg = mass * CONSTANTS.SOLAR_MASS_KG;
 
   if (mass < HYDROSTATIC_EQUILIBRIUM_MASS) {
-    // Below hydrostatic equilibrium - irregular shape
+    // Below hydrostatic equilibrium - irregular shape (radius slider disabled)
     return { min: 1000, max: 100000, realistic: 10000 };
   } else if (mass < DEUTERIUM_FUSION_MASS) {
-    // Gas giant / sub-brown dwarf: roughly Jupiter-sized
-    return { min: 60000, max: 90000, realistic: 71000 };
+    // Gas giant / sub-brown dwarf: allow extreme compression
+    const realistic = 71000;
+    return { min: 1000, max: realistic * 3, realistic }; // Can compress to 1,000 km!
   } else if (mass < 0.08) {
-    // Brown dwarf: slightly larger than Jupiter
-    return { min: 70000, max: 100000, realistic: 80000 };
+    // Brown dwarf: allow extreme compression
+    const realistic = 80000;
+    return { min: 1000, max: realistic * 3, realistic };
   } else if (mass < 0.45) {
-    // Red dwarf: 0.1-0.6 solar radii
+    // Red dwarf: allow extreme compression
     const r = CONSTANTS.SOLAR_RADIUS_KM * (0.1 + mass * 0.5);
-    return { min: r * 0.8, max: r * 1.2, realistic: r };
+    return { min: 1000, max: r * 5, realistic: r };
   } else if (mass < 8) {
-    // Main sequence: rough M-R relationship
+    // Main sequence: allow compression down to near white dwarf size
     const r = CONSTANTS.SOLAR_RADIUS_KM * Math.pow(mass, 0.57);
-    return { min: r * 0.8, max: r * 1.5, realistic: r };
+    return { min: 5000, max: r * 3, realistic: r };
   } else if (mass < 100) {
-    // Massive stars and supergiants
+    // Massive stars: allow compression
     const r = CONSTANTS.SOLAR_RADIUS_KM * Math.pow(mass, 0.5) * 5;
-    return { min: r * 0.5, max: r * 2, realistic: r };
+    return { min: 10000, max: r * 2, realistic: r };
   } else {
     // Stellar remnants
     if (objectType.includes('White Dwarf')) {
@@ -855,20 +857,24 @@ export default function StellarMassApp() {
               </div>
             </div>
 
-            {mass >= HYDROSTATIC_EQUILIBRIUM_MASS && radius && (
-              <div style={{
-                padding: '20px',
-                backgroundColor: '#252528',
-                borderRadius: '8px'
-              }}>
-                <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                  Radius
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#4ade80' }}>
-                  {formatRadius(radius)}
-                </div>
+            <div style={{
+              padding: '20px',
+              backgroundColor: '#252528',
+              borderRadius: '8px',
+              opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.5
+            }}>
+              <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
+                Radius
+                {mass < HYDROSTATIC_EQUILIBRIUM_MASS && (
+                  <span style={{ fontSize: '0.75rem', marginLeft: '5px' }}>
+                    (N/A - irregular shape)
+                  </span>
+                )}
               </div>
-            )}
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#4ade80' }}>
+                {mass >= HYDROSTATIC_EQUILIBRIUM_MASS && radius ? formatRadius(radius) : '—'}
+              </div>
+            </div>
 
             {luminosity > 0 && (
               <>
@@ -928,82 +934,94 @@ export default function StellarMassApp() {
           />
         </div>
 
-        {/* Radius Slider (only for objects with hydrostatic equilibrium) */}
-        {mass >= HYDROSTATIC_EQUILIBRIUM_MASS && radius !== null && (
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '10px',
-              fontSize: '1.1rem',
-              fontWeight: 'bold'
-            }}>
-              Radius: {formatRadius(radius)}
-            </label>
-            <input
-              type="range"
-              min={radiusRange.min}
-              max={radiusRange.max}
-              step={(radiusRange.max - radiusRange.min) / 100}
-              value={radius}
-              onChange={(e) => setRadius(parseFloat(e.target.value))}
+        {/* Radius Slider (always visible, disabled below HE) */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{
+            display: 'block',
+            marginBottom: '10px',
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
+            opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.5
+          }}>
+            Radius: {radius !== null ? formatRadius(radius) : 'N/A'}
+            {mass < HYDROSTATIC_EQUILIBRIUM_MASS && (
+              <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: '#a1a1a8', marginLeft: '10px' }}>
+                (requires hydrostatic equilibrium)
+              </span>
+            )}
+          </label>
+          <input
+            type="range"
+            min={radiusRange.min}
+            max={radiusRange.max}
+            step={(radiusRange.max - radiusRange.min) / 100}
+            value={radius || radiusRange.realistic}
+            onChange={(e) => setRadius(parseFloat(e.target.value))}
+            disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
+            style={{
+              width: '100%',
+              height: '8px',
+              cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
+              accentColor: '#4ade80',
+              opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
+            }}
+          />
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: '10px',
+            gap: '10px'
+          }}>
+            <button
+              onClick={() => setRadius(radiusRange.min)}
+              disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
               style={{
-                width: '100%',
-                height: '8px',
-                cursor: 'pointer',
-                accentColor: '#4ade80'
+                padding: '8px 12px',
+                backgroundColor: '#393941',
+                color: '#e9e9ea',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
+                fontSize: '0.8rem',
+                opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
-            />
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: '10px',
-              gap: '10px'
-            }}>
-              <button
-                onClick={() => setRadius(radiusRange.min)}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#393941',
-                  color: '#e9e9ea',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                Min
-              </button>
-              <button
-                onClick={() => setRadius(radiusRange.realistic)}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#393941',
-                  color: '#e9e9ea',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                Realistic
-              </button>
-              <button
-                onClick={() => setRadius(radiusRange.max)}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#393941',
-                  color: '#e9e9ea',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                Max
-              </button>
-            </div>
+            >
+              Min
+            </button>
+            <button
+              onClick={() => setRadius(radiusRange.realistic)}
+              disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#393941',
+                color: '#e9e9ea',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
+                fontSize: '0.8rem',
+                opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
+              }}
+            >
+              Realistic
+            </button>
+            <button
+              onClick={() => setRadius(radiusRange.max)}
+              disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#393941',
+                color: '#e9e9ea',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
+                fontSize: '0.8rem',
+                opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
+              }}
+            >
+              Max
+            </button>
           </div>
-        )}
+        </div>
 
 
         {/* Preset Buttons */}
