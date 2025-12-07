@@ -407,9 +407,13 @@ export default function StellarMassApp() {
               {MASS_THRESHOLDS.map((threshold, index) => {
                 const x = massToX(Math.log10(threshold.value));
                 const y = (chartHeight - chartPadding.top - chartPadding.bottom) / 2;
+                // Alternate labels: even indices on top, odd indices on bottom
+                const isTop = index % 2 === 0;
+                const labelY = isTop ? y - 25 : y + 40;
 
                 return (
-                  <g key={index}>
+                  <g key={index} style={{ cursor: 'help' }}>
+                    <title>{threshold.name}: {threshold.description}</title>
                     <line
                       x1={x}
                       y1={y - 15}
@@ -428,7 +432,7 @@ export default function StellarMassApp() {
                     />
                     <text
                       x={x}
-                      y={y - 25}
+                      y={labelY}
                       textAnchor="middle"
                       fill={threshold.color}
                       fontSize="10"
