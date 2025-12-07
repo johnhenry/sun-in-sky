@@ -23,6 +23,7 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
   const [isAligned, setIsAligned] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({ alpha: 0, beta: 0, gamma: 0 });
 
   // Device orientation state
   const deviceOrientationRef = useRef({
@@ -194,11 +195,19 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
       // Calculate device's pointing direction
       // alpha: compass heading (0° = North, 90° = East, 180° = South, 270° = West)
       // beta: pitch (tilt forward/back)
+      //   - 0° = device flat (screen up) → looking at zenith (90° elevation)
+      //   - 90° = device vertical → looking at horizon (0° elevation)
+      //   - -90° = device upside down vertical → looking at horizon behind
       // gamma: roll (tilt left/right)
+
+      // Convert beta (pitch) to elevation angle
+      // When device is flat (beta=0), you're looking UP at zenith (elevation=90°)
+      // When device is vertical (beta=90), you're looking at horizon (elevation=0°)
+      const deviceElevation = 90 - beta;
 
       // Convert to radians
       const deviceHeading = alpha * (Math.PI / 180);
-      const devicePitch = beta * (Math.PI / 180);
+      const deviceElevationRad = deviceElevation * (Math.PI / 180);
 
       // Sun's position in spherical coordinates
       const sunHeading = sunAzimuth * (Math.PI / 180);
@@ -211,7 +220,7 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
       while (headingDiff > Math.PI) headingDiff -= 2 * Math.PI;
       while (headingDiff < -Math.PI) headingDiff += 2 * Math.PI;
 
-      const elevationDiff = sunElevation - devicePitch;
+      const elevationDiff = sunElevation - deviceElevationRad;
 
       // Rotate arrow to point at sun
       // Y-axis rotation = horizontal (left/right)
@@ -246,17 +255,45 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     if (!permissionGranted) return;
 
     const handleOrientation = (event) => {
-      deviceOrientationRef.current = {
-        alpha: event.alpha || 0,  // Compass (0-360°)
-        beta: event.beta || 0,    // Pitch (-180 to 180°)
-        gamma: event.gamma || 0   // Roll (-90 to 90°)
-      };
+      // IMPORTANT: alpha can be null if device has no magnetometer
+      // On iOS, alpha needs motion permissions AND magnetometer
+      // On some Android devices, alpha might be null or undefined
+
+      const alpha = event.alpha !== null && event.alpha !== undefined ? event.alpha : 0;
+      const beta = event.beta !== null && event.beta !== undefined ? event.beta : 0;
+      const gamma = event.gamma !== null && event.gamma !== undefined ? event.gamma : 0;
+
+      deviceOrientationRef.current = { alpha, beta, gamma };
+      setDebugInfo({ alpha, beta, gamma }); // Update state for debug display
+
+      // Debug logging (can be removed in production)
+      console.log('Device Orientation:', {
+        alpha: alpha.toFixed(1) + '°',
+        beta: beta.toFixed(1) + '°',
+        gamma: gamma.toFixed(1) + '°',
+        absolute: event.absolute
+      });
     };
 
     window.addEventListener('deviceorientation', handleOrientation, true);
 
+    // Also try with 'deviceorientationabsolute' for better compass data
+    const handleOrientationAbsolute = (event) => {
+      if (event.alpha !== null) {
+        const alpha = event.alpha;
+        const beta = event.beta || 0;
+        const gamma = event.gamma || 0;
+        deviceOrientationRef.current = { alpha, beta, gamma };
+        setDebugInfo({ alpha, beta, gamma });
+      }
+    };
+
+    // Some browsers support absolute orientation (true north vs magnetic north)
+    window.addEventListener('deviceorientationabsolute', handleOrientationAbsolute, true);
+
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation, true);
+      window.removeEventListener('deviceorientationabsolute', handleOrientationAbsolute, true);
     };
   }, [permissionGranted]);
 
@@ -355,6 +392,31 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
         ✕
       </button>
 
+      {/* Debug info - Device sensors */}
+      <div style={{
+        position: 'absolute',
+        top: '80px',
+        left: '10px',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        color: '#e9e9ea',
+        fontSize: '10px',
+        fontFamily: 'monospace',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <div style={{ marginBottom: '4px', color: '#f4d03f', fontWeight: 600 }}>DEVICE SENSORS</div>
+        <div>Compass (α): {debugInfo.alpha.toFixed(1)}°</div>
+        <div>Pitch (β): {debugInfo.beta.toFixed(1)}°</div>
+        <div>Roll (γ): {debugInfo.gamma.toFixed(1)}°</div>
+        <div style={{ marginTop: '4px', color: '#4ade80' }}>
+          {debugInfo.alpha === 0 && debugInfo.beta === 0 && debugInfo.gamma === 0
+            ? '⚠️ No sensor data'
+            : '✓ Sensors active'}
+        </div>
+      </div>
+
       {/* Sun info */}
       <div style={{
         position: 'absolute',
@@ -375,6 +437,9 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
         </div>
         <div style={{ fontWeight: 600 }}>
           {sunAzimuth.toFixed(0)}° • {sunAltitude.toFixed(0)}° elevation
+        </div>
+        <div style={{ fontSize: '10px', color: '#a1a1a8', marginTop: '4px' }}>
+          Target: {sunAzimuth.toFixed(1)}° azimuth, {sunAltitude.toFixed(1)}° altitude
         </div>
       </div>
 
