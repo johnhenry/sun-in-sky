@@ -536,44 +536,6 @@ export default function StellarMassApp() {
             style={{ backgroundColor: '#252528', borderRadius: '8px' }}
           >
             <g transform={`translate(${chartPadding.left}, ${chartPadding.top})`}>
-              {/* Horizontal temperature bands for fusion states */}
-              {/* No fusion: below 10^6 K */}
-              <rect
-                x={0}
-                y={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM))}
-                width={chartWidth}
-                height={tempToY(minLogTemp) - tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM))}
-                fill="#8a8a9c"
-                opacity={0.15}
-              />
-              {/* Deuterium fusion: 10^6 to 4×10^6 K */}
-              <rect
-                x={0}
-                y={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP))}
-                width={chartWidth}
-                height={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM)) - tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP))}
-                fill="#fb923c"
-                opacity={0.15}
-              />
-              {/* Hydrogen fusion: 4×10^6 to 5×10^8 K */}
-              <rect
-                x={0}
-                y={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.CARBON))}
-                width={chartWidth}
-                height={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP)) - tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.CARBON))}
-                fill="#f4d03f"
-                opacity={0.15}
-              />
-              {/* Carbon fusion: above 5×10^8 K */}
-              <rect
-                x={0}
-                y={0}
-                width={chartWidth}
-                height={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.CARBON))}
-                fill="#ef4444"
-                opacity={0.15}
-              />
-
               {/* Zone boundary - marks transition from compressed to expanded scale */}
               <line
                 x1={0}
