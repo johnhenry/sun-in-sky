@@ -50,7 +50,19 @@ const CONSTANTS = {
   EARTH_RADIUS_KM: 6371,
   G: 6.674e-11, // Gravitational constant (m^3 kg^-1 s^-2)
   C: 299792458, // Speed of light (m/s)
-  STEFAN_BOLTZMANN: 5.670374419e-8 // Stefan-Boltzmann constant (W m^-2 K^-4)
+  STEFAN_BOLTZMANN: 5.670374419e-8, // Stefan-Boltzmann constant (W m^-2 K^-4)
+  BOLTZMANN: 1.380649e-23, // Boltzmann constant (J/K)
+  PROTON_MASS: 1.67262192e-27 // Proton mass (kg)
+};
+
+/**
+ * Fusion temperature thresholds (in Kelvin)
+ */
+const FUSION_TEMP_THRESHOLDS = {
+  DEUTERIUM: 1e6,      // 1 million K - deuterium fusion begins
+  HYDROGEN_PP: 4e6,    // 4 million K - proton-proton chain
+  HYDROGEN_CNO: 15e6,  // 15 million K - CNO cycle dominant
+  CARBON: 5e8          // 500 million K - carbon fusion
 };
 
 /**
@@ -167,17 +179,48 @@ function calculateSurfaceTemperature(luminosity, radius) {
 }
 
 /**
- * Estimate core temperature
+ * Calculate core temperature using virial theorem
+ * T_core ≈ (G × M × m_p) / (k_B × R)
  * @param {number} mass - Mass in solar masses
- * @param {string} objectType - Type of object
+ * @param {number} radius - Radius in km
  * @returns {number} Core temperature in Kelvin
  */
-function estimateCoreTemperature(mass, objectType) {
-  if (mass < 0.013) return 1e6; // No fusion, but gravitational heating
-  if (mass < 0.08) return 3e6; // Deuterium burning
-  if (mass < 1.5) return 1.5e7 * mass; // Hydrogen burning
-  if (mass < 8) return 2e7 * Math.sqrt(mass); // CNO cycle dominant
-  return 5e7 * Math.sqrt(mass); // Massive stars
+function calculateCoreTemperature(mass, radius) {
+  const massKg = mass * CONSTANTS.SOLAR_MASS_KG;
+  const radiusM = radius * 1000; // Convert km to m
+
+  // Virial theorem approximation: T_core ≈ (G × M × m_p) / (k_B × R)
+  // This is simplified but captures the mass/radius dependence
+  const T_core = (CONSTANTS.G * massKg * CONSTANTS.PROTON_MASS) /
+                 (CONSTANTS.BOLTZMANN * radiusM);
+
+  return T_core;
+}
+
+/**
+ * Determine fusion state based on core temperature
+ * @param {number} coreTemp - Core temperature in Kelvin
+ * @returns {string} Fusion state: 'none', 'deuterium', 'hydrogen', or 'carbon'
+ */
+function getFusionState(coreTemp) {
+  if (coreTemp < FUSION_TEMP_THRESHOLDS.DEUTERIUM) return 'none';
+  if (coreTemp < FUSION_TEMP_THRESHOLDS.HYDROGEN_PP) return 'deuterium';
+  if (coreTemp < FUSION_TEMP_THRESHOLDS.CARBON) return 'hydrogen';
+  return 'carbon';
+}
+
+/**
+ * Calculate mass needed to reach a given temperature at specified radius
+ * Inverse of calculateCoreTemperature: M = (T × k_B × R) / (G × m_p)
+ * @param {number} temperature - Target temperature in Kelvin
+ * @param {number} radius - Radius in km
+ * @returns {number} Mass in solar masses
+ */
+function massForTemperature(temperature, radius) {
+  const radiusM = radius * 1000; // Convert km to m
+  const massKg = (temperature * CONSTANTS.BOLTZMANN * radiusM) /
+                 (CONSTANTS.G * CONSTANTS.PROTON_MASS);
+  return massKg / CONSTANTS.SOLAR_MASS_KG;
 }
 
 /**
@@ -264,7 +307,45 @@ export default function StellarMassApp() {
   const surfaceTemp = useMemo(() => calculateSurfaceTemperature(luminosity, radius || radiusRange.realistic),
     [luminosity, radius, radiusRange.realistic]);
 
-  const coreTemp = useMemo(() => estimateCoreTemperature(mass, objectType), [mass, objectType]);
+  const coreTemp = useMemo(() => calculateCoreTemperature(mass, radius || radiusRange.realistic),
+    [mass, radius, radiusRange.realistic]);
+
+  const fusionState = useMemo(() => getFusionState(coreTemp), [coreTemp]);
+
+  // Calculate dynamic fusion thresholds based on current radius
+  const dynamicThresholds = useMemo(() => {
+    const currentRadius = radius || radiusRange.realistic;
+    return [
+      {
+        name: 'Hydrostatic Equilibrium',
+        value: HYDROSTATIC_EQUILIBRIUM_MASS,
+        color: '#4ade80',
+        description: 'Minimum mass for spherical shape (~Ceres)',
+        isFixed: true // This threshold doesn't depend on radius
+      },
+      {
+        name: 'Deuterium Fusion',
+        value: massForTemperature(FUSION_TEMP_THRESHOLDS.DEUTERIUM, currentRadius),
+        color: '#fb923c',
+        description: `Brown dwarf boundary (at current radius)`,
+        isFixed: false
+      },
+      {
+        name: 'Hydrogen Fusion',
+        value: massForTemperature(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP, currentRadius),
+        color: '#f4d03f',
+        description: `Main sequence stars begin (at current radius)`,
+        isFixed: false
+      },
+      {
+        name: 'Carbon Fusion',
+        value: massForTemperature(FUSION_TEMP_THRESHOLDS.CARBON, currentRadius),
+        color: '#ef4444',
+        description: `Massive star threshold (at current radius)`,
+        isFixed: false
+      }
+    ].filter(t => t.value >= 1e-10 && t.value <= 100); // Only show thresholds in visible range
+  }, [radius, radiusRange.realistic]);
 
   const escapeVelocity = useMemo(() => calculateEscapeVelocity(mass, radius || radiusRange.realistic),
     [mass, radius, radiusRange.realistic]);
@@ -374,11 +455,11 @@ export default function StellarMassApp() {
           >
             <g transform={`translate(${chartPadding.left}, ${chartPadding.top})`}>
               {/* Background regions between thresholds */}
-              {MASS_THRESHOLDS.map((threshold, index) => {
-                if (index === MASS_THRESHOLDS.length - 1) return null;
+              {dynamicThresholds.map((threshold, index) => {
+                if (index === dynamicThresholds.length - 1) return null;
                 const x1 = massToX(Math.log10(threshold.value));
-                const x2 = index < MASS_THRESHOLDS.length - 1
-                  ? massToX(Math.log10(MASS_THRESHOLDS[index + 1].value))
+                const x2 = index < dynamicThresholds.length - 1
+                  ? massToX(Math.log10(dynamicThresholds[index + 1].value))
                   : chartWidth;
                 return (
                   <rect
@@ -404,7 +485,7 @@ export default function StellarMassApp() {
               />
 
               {/* Threshold markers */}
-              {MASS_THRESHOLDS.map((threshold, index) => {
+              {dynamicThresholds.map((threshold, index) => {
                 const x = massToX(Math.log10(threshold.value));
                 const y = (chartHeight - chartPadding.top - chartPadding.bottom) / 2;
                 // Alternate labels: even indices on top, odd indices on bottom
@@ -421,6 +502,9 @@ export default function StellarMassApp() {
                       y2={y + 15}
                       stroke={threshold.color}
                       strokeWidth={3}
+                      style={{
+                        transition: 'all 0.5s ease-in-out'
+                      }}
                     />
                     <circle
                       cx={x}
@@ -429,6 +513,9 @@ export default function StellarMassApp() {
                       fill={threshold.color}
                       stroke="#fff"
                       strokeWidth={2}
+                      style={{
+                        transition: 'all 0.5s ease-in-out'
+                      }}
                     />
                     <text
                       x={x}
@@ -437,8 +524,12 @@ export default function StellarMassApp() {
                       fill={threshold.color}
                       fontSize="10"
                       fontWeight="bold"
+                      style={{
+                        transition: 'all 0.5s ease-in-out'
+                      }}
                     >
                       {threshold.name.split(' ')[0]}
+                      {!threshold.isFixed && ' ⚡'}
                     </text>
                   </g>
                 );
@@ -500,6 +591,7 @@ export default function StellarMassApp() {
               mass={mass}
               radius={radius || radiusRange.realistic}
               objectType={objectType}
+              fusionState={fusionState}
             />
           </div>
 

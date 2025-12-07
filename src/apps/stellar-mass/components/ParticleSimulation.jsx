@@ -44,24 +44,17 @@ function fibonacciSphere(count, radius) {
 /**
  * Cube particles with physics-based behavior
  */
-function CubeParticles({ mass, radius }) {
+function CubeParticles({ mass, radius, fusionState }) {
   const meshRef = useRef();
   const initialPositions = useRef([]);
   const targetPositions = useRef([]);
   const velocities = useRef([]);
   const collapseProgress = useRef(0);
   const collapseStartTime = useRef(null);
+  const prevHasHydrostaticEquilibrium = useRef(null);
 
   // Determine if object has hydrostatic equilibrium
   const hasHydrostaticEquilibrium = mass >= HYDROSTATIC_EQUILIBRIUM_MASS;
-
-  // Determine fusion state
-  const fusionState = useMemo(() => {
-    if (mass < DEUTERIUM_FUSION_MASS) return 'none';
-    if (mass < HYDROGEN_FUSION_MASS) return 'deuterium';
-    if (mass < CARBON_FUSION_MASS) return 'hydrogen';
-    return 'massive';
-  }, [mass]);
 
   // Get cube color based on fusion state
   const cubeColor = useMemo(() => {
@@ -103,51 +96,74 @@ function CubeParticles({ mass, radius }) {
 
   // Initialize positions when component mounts or particle count changes
   useEffect(() => {
-    // Random initial positions (irregular blob)
-    const initial = [];
-    const vels = [];
+    // Detect transition direction
+    const wasAboveHE = prevHasHydrostaticEquilibrium.current;
+    const isNowAboveHE = hasHydrostaticEquilibrium;
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
+    // Only regenerate positions on first mount or when transitioning states
+    const shouldRegeneratePositions =
+      wasAboveHE === null || // First mount
+      wasAboveHE !== isNowAboveHE; // State transition
 
-      // Create an irregular blob by using non-uniform radius distribution
-      // Mix of different radii to create lumpy, non-spherical shape
-      const r = (Math.random() * Math.random()) * 2 + 0.5; // Irregular radius 0.5-2.5 units
+    if (shouldRegeneratePositions) {
+      // Random initial positions (irregular blob)
+      const initial = [];
+      const vels = [];
 
-      // Add some asymmetry to make it look irregular
-      const asymmetryX = 1 + (Math.random() - 0.5) * 0.5;
-      const asymmetryY = 1 + (Math.random() - 0.5) * 0.5;
-      const asymmetryZ = 1 + (Math.random() - 0.5) * 0.5;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
 
-      initial.push({
-        x: r * Math.sin(phi) * Math.cos(theta) * asymmetryX,
-        y: r * Math.sin(phi) * Math.sin(theta) * asymmetryY,
-        z: r * Math.cos(phi) * asymmetryZ
-      });
+        // Create an irregular blob by using non-uniform radius distribution
+        // Mix of different radii to create lumpy, non-spherical shape
+        const r = (Math.random() * Math.random()) * 2 + 0.5; // Irregular radius 0.5-2.5 units
 
-      vels.push({
-        x: (Math.random() - 0.5) * 0.01,
-        y: (Math.random() - 0.5) * 0.01,
-        z: (Math.random() - 0.5) * 0.01
-      });
+        // Add some asymmetry to make it look irregular
+        const asymmetryX = 1 + (Math.random() - 0.5) * 0.5;
+        const asymmetryY = 1 + (Math.random() - 0.5) * 0.5;
+        const asymmetryZ = 1 + (Math.random() - 0.5) * 0.5;
+
+        initial.push({
+          x: r * Math.sin(phi) * Math.cos(theta) * asymmetryX,
+          y: r * Math.sin(phi) * Math.sin(theta) * asymmetryY,
+          z: r * Math.cos(phi) * asymmetryZ
+        });
+
+        vels.push({
+          x: (Math.random() - 0.5) * 0.01,
+          y: (Math.random() - 0.5) * 0.01,
+          z: (Math.random() - 0.5) * 0.01
+        });
+      }
+
+      // Target positions (collapsed sphere)
+      const targets = fibonacciSphere(PARTICLE_COUNT, visualRadius);
+
+      // If transitioning from sphere to blob, swap initial and target
+      if (wasAboveHE && !isNowAboveHE) {
+        // Going from sphere → blob: current positions are sphere, animate to blob
+        initialPositions.current = targets; // Start from sphere
+        targetPositions.current = initial; // Animate to blob
+        collapseStartTime.current = Date.now();
+        collapseProgress.current = 0;
+      } else {
+        // Going from blob → sphere OR first mount
+        initialPositions.current = initial;
+        targetPositions.current = targets;
+        velocities.current = vels;
+
+        if (isNowAboveHE) {
+          collapseStartTime.current = Date.now();
+          collapseProgress.current = 0;
+        }
+      }
+    } else {
+      // Just update targets if radius changed but HE state didn't
+      targetPositions.current = fibonacciSphere(PARTICLE_COUNT, visualRadius);
     }
 
-    // Target positions (collapsed sphere)
-    const targets = fibonacciSphere(PARTICLE_COUNT, visualRadius);
-
-    initialPositions.current = initial;
-    targetPositions.current = targets;
-    velocities.current = vels;
-
-    // Reset collapse animation
-    if (hasHydrostaticEquilibrium && collapseStartTime.current === null) {
-      collapseStartTime.current = Date.now();
-      collapseProgress.current = 0;
-    } else if (!hasHydrostaticEquilibrium) {
-      collapseStartTime.current = null;
-      collapseProgress.current = 0;
-    }
+    // Update previous state
+    prevHasHydrostaticEquilibrium.current = hasHydrostaticEquilibrium;
   }, [hasHydrostaticEquilibrium, visualRadius]);
 
   // Animation loop
@@ -157,18 +173,19 @@ function CubeParticles({ mass, radius }) {
     const dummy = new THREE.Object3D();
     const time = state.clock.elapsedTime;
 
-    if (hasHydrostaticEquilibrium) {
-      // Collapse animation (2 seconds)
-      if (collapseProgress.current < 1) {
-        const elapsed = (Date.now() - collapseStartTime.current) / 1000;
-        collapseProgress.current = Math.min(1, elapsed / 2.0);
-      }
+    // Handle transition animation (both directions)
+    const isAnimating = collapseStartTime.current !== null && collapseProgress.current < 1;
 
-      // Pulsing effect for fusion
+    if (isAnimating) {
+      // Transitioning (either sphere→blob or blob→sphere)
+      const elapsed = (Date.now() - collapseStartTime.current) / 1000;
+      collapseProgress.current = Math.min(1, elapsed / 2.0);
+
+      // Pulsing effect for fusion (only when in sphere state)
       let pulseScale = 1;
-      if (fusionState !== 'none') {
-        const pulseSpeed = fusionState === 'massive' ? 3 : fusionState === 'hydrogen' ? 2 : 1.5;
-        const pulseAmount = fusionState === 'massive' ? 0.1 : fusionState === 'hydrogen' ? 0.08 : 0.05;
+      if (hasHydrostaticEquilibrium && fusionState !== 'none') {
+        const pulseSpeed = fusionState === 'carbon' ? 3 : fusionState === 'hydrogen' ? 2 : 1.5;
+        const pulseAmount = fusionState === 'carbon' ? 0.1 : fusionState === 'hydrogen' ? 0.08 : 0.05;
         pulseScale = 1 + Math.sin(time * pulseSpeed) * pulseAmount;
       }
 
@@ -195,8 +212,43 @@ function CubeParticles({ mass, radius }) {
         meshRef.current.setMatrixAt(i, dummy.matrix);
       }
 
+      // If animation finished and now below HE, switch to Brownian motion
+      if (collapseProgress.current >= 1 && !hasHydrostaticEquilibrium) {
+        // Copy current positions to initialPositions for Brownian motion
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          initialPositions.current[i] = { ...targetPositions.current[i] };
+        }
+        collapseStartTime.current = null;
+      } else if (collapseProgress.current >= 1) {
+        // Animation finished, clear the start time
+        collapseStartTime.current = null;
+      }
+
+    } else if (hasHydrostaticEquilibrium) {
+      // Stable sphere state with pulsing
+      let pulseScale = 1;
+      if (fusionState !== 'none') {
+        const pulseSpeed = fusionState === 'carbon' ? 3 : fusionState === 'hydrogen' ? 2 : 1.5;
+        const pulseAmount = fusionState === 'carbon' ? 0.1 : fusionState === 'hydrogen' ? 0.08 : 0.05;
+        pulseScale = 1 + Math.sin(time * pulseSpeed) * pulseAmount;
+      }
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const target = targetPositions.current[i];
+        const x = target.x * pulseScale;
+        const y = target.y * pulseScale;
+        const z = target.z * pulseScale;
+
+        dummy.position.set(x, y, z);
+        dummy.rotation.x = time * 0.5 + i;
+        dummy.rotation.y = time * 0.7 + i * 0.5;
+
+        dummy.updateMatrix();
+        meshRef.current.setMatrixAt(i, dummy.matrix);
+      }
+
     } else {
-      // Brownian motion for diffuse cloud
+      // Brownian motion for irregular blob
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const pos = initialPositions.current[i];
         const vel = velocities.current[i];
@@ -313,7 +365,7 @@ function InfoOverlay({ mass, objectType }) {
 /**
  * Main ParticleSimulation component
  */
-export default function ParticleSimulation({ mass, radius, objectType }) {
+export default function ParticleSimulation({ mass, radius, objectType, fusionState }) {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', minHeight: '600px' }}>
       <InfoOverlay mass={mass} objectType={objectType} />
@@ -339,7 +391,7 @@ export default function ParticleSimulation({ mass, radius, objectType }) {
         />
 
         {/* Cube particles */}
-        <CubeParticles mass={mass} radius={radius} />
+        <CubeParticles mass={mass} radius={radius} fusionState={fusionState} />
 
         {/* Camera controls */}
         <OrbitControls
