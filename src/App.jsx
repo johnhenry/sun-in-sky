@@ -447,26 +447,33 @@ const SunPositionViz = () => {
       return;
     }
 
-    // Convert mouse X to time/date
-    const fraction = (mouseX - padding.left) / graphWidth;
-    let tooltipHour, tooltipDay, tooltipMinute;
+    // Find the nearest point on the actual curve (matches visual exactly)
+    // This ensures tooltip shows data from the rendered curve, not recalculated values
+    let nearestPoint = curveData[0];
+    let minDistance = Math.abs(curveData[0].x - mouseX);
 
-    if (viewMode === 'day') {
-      tooltipHour = fraction * dayLength;
-      tooltipDay = dayOfYear;
-      tooltipMinute = Math.floor(minuteOfYear / minutesPerDay) * minutesPerDay + tooltipHour * 60;
-    } else {
-      tooltipMinute = fraction * totalMinutesInYear;
-      tooltipDay = Math.floor(tooltipMinute / minutesPerDay) + 1;
-      tooltipHour = (tooltipMinute % minutesPerDay) / 60;
+    for (let i = 1; i < curveData.length; i++) {
+      const distance = Math.abs(curveData[i].x - mouseX);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestPoint = curveData[i];
+      }
     }
 
-    const tooltipAltitude = getAltitudeAtMinute(tooltipMinute);
+    // Extract time/date from the nearest actual data point
+    let tooltipHour, tooltipDay;
+    if (viewMode === 'day') {
+      tooltipHour = nearestPoint.hour;
+      tooltipDay = dayOfYear;
+    } else {
+      tooltipDay = Math.floor(nearestPoint.minute / minutesPerDay) + 1;
+      tooltipHour = (nearestPoint.minute % minutesPerDay) / 60;
+    }
 
     setTooltipData({
       x: mouseX,
       y: mouseY,
-      altitude: tooltipAltitude,
+      altitude: nearestPoint.altitude,
       hour: tooltipHour,
       day: tooltipDay
     });
