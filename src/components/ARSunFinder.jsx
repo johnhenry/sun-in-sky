@@ -70,14 +70,14 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     scene.background = new THREE.Color(0x000000);
     sceneRef.current = scene;
 
-    // Camera
+    // Camera - will be controlled by device orientation
     const camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
-    camera.position.z = 5;
+    camera.position.set(0, 0, 0); // Camera at origin
     cameraRef.current = camera;
 
     // Renderer
@@ -188,50 +188,48 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
   // Define arrow update function that captures latest props
   useEffect(() => {
     updateArrowOrientationRef.current = () => {
-      if (!arrowRef.current || !glowRef.current) return;
+      if (!arrowRef.current || !glowRef.current || !cameraRef.current) return;
 
       const { alpha, beta, gamma } = deviceOrientationRef.current;
 
-      // Convert sun position (azimuth, altitude) to 3D vector
-      const sunAzimuthRad = sunAzimuth * (Math.PI / 180);
-      const sunAltitudeRad = sunAltitude * (Math.PI / 180);
+      // STEP 1: Update camera to match device orientation
+      // DeviceOrientation: alpha=compass, beta=pitch, gamma=roll
+      const alphaRad = (alpha * Math.PI) / 180;
+      const betaRad = (beta * Math.PI) / 180;
+      const gammaRad = (gamma * Math.PI) / 180;
 
-      const sunVector = new THREE.Vector3(
-        Math.cos(sunAltitudeRad) * Math.sin(sunAzimuthRad),  // X: East-West
-        Math.sin(sunAltitudeRad),                            // Y: Up-Down
-        -Math.cos(sunAltitudeRad) * Math.cos(sunAzimuthRad)  // Z: North-South (negative because camera looks down -Z)
-      );
+      // Set camera orientation from device
+      // Note: DeviceOrientation uses ZXY order
+      const cameraEuler = new THREE.Euler(betaRad, alphaRad, -gammaRad, 'YXZ');
+      cameraRef.current.setRotationFromEuler(cameraEuler);
 
-      // Convert device orientation to 3D rotation matrix
-      // alpha (compass): rotation around Y axis (0° = North)
-      // beta (pitch): rotation around X axis
-      // gamma (roll): rotation around Z axis
-      const alphaRad = alpha * (Math.PI / 180);
-      const betaRad = beta * (Math.PI / 180);
-      const gammaRad = gamma * (Math.PI / 180);
+      // STEP 2: Position arrow at sun's direction in world space
+      // Convert sun's azimuth/altitude to 3D position
+      const sunAzimuthRad = (sunAzimuth * Math.PI) / 180;
+      const sunAltitudeRad = (sunAltitude * Math.PI) / 180;
 
-      // Create device orientation quaternion (ZXY order to match device orientation spec)
-      const deviceQuaternion = new THREE.Quaternion();
-      const euler = new THREE.Euler(betaRad, alphaRad, -gammaRad, 'YXZ');
-      deviceQuaternion.setFromEuler(euler);
+      // Place sun at fixed distance in world space
+      const distance = 10; // Arbitrary distance
+      const sunX = distance * Math.cos(sunAltitudeRad) * Math.sin(sunAzimuthRad);
+      const sunY = distance * Math.sin(sunAltitudeRad);
+      const sunZ = -distance * Math.cos(sunAltitudeRad) * Math.cos(sunAzimuthRad);
 
-      // Transform sun vector from world space to device's local space
-      // This gives us the direction to the sun as seen from the device's perspective
-      const deviceQuaternionInverse = deviceQuaternion.clone().invert();
-      const sunVectorLocal = sunVector.clone();
-      sunVectorLocal.applyQuaternion(deviceQuaternionInverse);
+      const sunPosition = new THREE.Vector3(sunX, sunY, sunZ);
 
-      // Point arrow (which points up by default) at the sun's direction in local space
-      const arrowUp = new THREE.Vector3(0, 1, 0);
-      const arrowQuaternion = new THREE.Quaternion();
-      arrowQuaternion.setFromUnitVectors(arrowUp, sunVectorLocal.normalize());
-      arrowRef.current.quaternion.copy(arrowQuaternion);
+      // Point arrow (at origin) toward sun position
+      const arrowPosition = new THREE.Vector3(0, 0, 0);
+      const direction = new THREE.Vector3().subVectors(sunPosition, arrowPosition).normalize();
 
-      // Check if device is pointing at sun (within 10° tolerance)
-      // Device forward in world space is (0,0,-1) rotated by device orientation
-      const deviceForward = new THREE.Vector3(0, 0, -1);
-      deviceForward.applyQuaternion(deviceQuaternion);
-      const angleBetween = deviceForward.angleTo(sunVector) * (180 / Math.PI);
+      // Arrow points up (+Y) by default, rotate it to point at sun
+      const up = new THREE.Vector3(0, 1, 0);
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromUnitVectors(up, direction);
+      arrowRef.current.setRotationFromQuaternion(quaternion);
+
+      // Check if aligned - is camera looking toward sun?
+      const cameraForward = new THREE.Vector3(0, 0, -1);
+      cameraForward.applyEuler(cameraEuler);
+      const angleBetween = cameraForward.angleTo(direction) * (180 / Math.PI);
       const aligned = angleBetween < 10;
       setIsAligned(aligned);
 
