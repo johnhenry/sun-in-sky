@@ -325,13 +325,15 @@ export default function StellarMassApp() {
         value: HYDROSTATIC_EQUILIBRIUM_MASS,
         color: '#4ade80',
         description: 'Minimum mass for spherical shape (~Ceres)',
-        isFixed: true // This threshold doesn't depend on radius
+        tooltip: 'Below this mass (~2.5×10⁻¹⁰ M☉), gravity is too weak to overcome material strength. Objects remain irregular "rubble piles" like asteroids.',
+        isFixed: true
       },
       {
         name: 'Deuterium Fusion',
         value: massForTemperature(FUSION_TEMP_THRESHOLDS.DEUTERIUM, currentRadius),
         color: '#fb923c',
         description: `Brown dwarf boundary (at current radius)`,
+        tooltip: `At this mass, core temperature reaches 1 million K, igniting deuterium fusion. Brown dwarfs glow faintly from this limited fusion. Moves with radius slider! Current: ${massForTemperature(FUSION_TEMP_THRESHOLDS.DEUTERIUM, currentRadius).toExponential(2)} M☉`,
         isFixed: false
       },
       {
@@ -339,6 +341,7 @@ export default function StellarMassApp() {
         value: massForTemperature(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP, currentRadius),
         color: '#f4d03f',
         description: `Main sequence stars begin (at current radius)`,
+        tooltip: `Core reaches 4 million K, starting proton-proton chain hydrogen fusion. This defines true "stardom" - sustained fusion for billions of years. The Sun crosses this threshold. Moves with radius slider!`,
         isFixed: false
       },
       {
@@ -346,10 +349,36 @@ export default function StellarMassApp() {
         value: massForTemperature(FUSION_TEMP_THRESHOLDS.CARBON, currentRadius),
         color: '#ef4444',
         description: `Massive star threshold (at current radius)`,
+        tooltip: `Core exceeds 500 million K, fusing carbon into heavier elements. Only massive stars (>8 M☉) reach this stage, eventually creating supernovae and leaving behind neutron stars or black holes.`,
         isFixed: false
       }
-    ].filter(t => t.value >= 1e-10 && t.value <= 100); // Only show thresholds in visible range
+    ].filter(t => t.value >= 1e-10 && t.value <= 100);
   }, [radius, radiusRange.realistic]);
+
+  // Fixed mass thresholds for compact objects (don't depend on radius/temperature)
+  const compactObjectThresholds = [
+    {
+      name: 'Chandrasekhar Limit',
+      value: 1.4,
+      color: '#60a5fa',
+      tooltip: 'Maximum mass for white dwarfs (~1.4 M☉). Beyond this, electron degeneracy pressure cannot support the star. It must collapse further into a neutron star. Named after Subrahmanyan Chandrasekhar who predicted this in 1930.',
+      dashPattern: '10,3'
+    },
+    {
+      name: 'TOV Limit',
+      value: 2.16,
+      color: '#a78bfa',
+      tooltip: 'Tolman-Oppenheimer-Volkoff Limit (~2.16 M☉). Maximum mass for neutron stars. Beyond this, even neutron degeneracy pressure fails. The star must collapse into a black hole. No known force can prevent this.',
+      dashPattern: '10,3'
+    },
+    {
+      name: 'Black Hole',
+      value: 2.5,
+      color: '#1a1a1c',
+      tooltip: 'Black Hole Formation (~2.5 M☉). When stellar cores exceed this mass after supernova, gravitational collapse is inevitable. All matter compressed into a singularity, with an event horizon from which not even light escapes.',
+      dashPattern: '5,5'
+    }
+  ];
 
   const escapeVelocity = useMemo(() => calculateEscapeVelocity(mass, radius || radiusRange.realistic),
     [mass, radius, radiusRange.realistic]);
@@ -624,12 +653,12 @@ export default function StellarMassApp() {
                 Carbon Fusion
               </text>
 
-              {/* Dynamic vertical threshold lines */}
+              {/* Dynamic vertical threshold lines (fusion) */}
               {dynamicThresholds.map((threshold, index) => {
                 const x = massToX(Math.log10(threshold.value));
                 return (
-                  <g key={`vthreshold-${index}`}>
-                    <title>{threshold.name}: {threshold.description}</title>
+                  <g key={`vthreshold-${index}`} style={{ cursor: 'help' }}>
+                    <title>{threshold.tooltip}</title>
                     <line
                       x1={x}
                       x2={x}
@@ -654,6 +683,46 @@ export default function StellarMassApp() {
                       }}
                     >
                       {threshold.name.split(' ')[0]}{!threshold.isFixed && ' ⚡'}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Fixed vertical threshold lines (compact objects) */}
+              {compactObjectThresholds.map((threshold, index) => {
+                const x = massToX(Math.log10(threshold.value));
+                // Position labels at different heights to avoid overlap
+                const labelY = 20 + (index * 25);
+                return (
+                  <g key={`compact-${index}`} style={{ cursor: 'help' }}>
+                    <title>{threshold.tooltip}</title>
+                    <line
+                      x1={x}
+                      x2={x}
+                      y1={0}
+                      y2={chartInnerHeight}
+                      stroke={threshold.color}
+                      strokeWidth={threshold.name === 'Black Hole' ? 3 : 2}
+                      strokeDasharray={threshold.dashPattern}
+                      opacity={0.8}
+                    />
+                    <circle
+                      cx={x}
+                      cy={labelY}
+                      r={4}
+                      fill={threshold.color}
+                      stroke="#fff"
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={x + 8}
+                      y={labelY + 4}
+                      fill={threshold.color}
+                      fontSize="9"
+                      fontWeight="bold"
+                      textAnchor="start"
+                    >
+                      {threshold.name}
                     </text>
                   </g>
                 );
