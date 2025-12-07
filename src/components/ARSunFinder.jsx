@@ -215,27 +215,22 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
       const euler = new THREE.Euler(betaRad, alphaRad, -gammaRad, 'YXZ');
       deviceQuaternion.setFromEuler(euler);
 
-      // Device's forward direction (what the camera is pointing at)
-      const deviceForward = new THREE.Vector3(0, 0, -1);
-      deviceForward.applyQuaternion(deviceQuaternion);
-
-      // Calculate the direction from device to sun (in device's local space)
-      const toSunLocal = sunVector.clone().sub(deviceForward);
-
-      // Transform back to world space by inverting device rotation
+      // Transform sun vector from world space to device's local space
+      // This gives us the direction to the sun as seen from the device's perspective
       const deviceQuaternionInverse = deviceQuaternion.clone().invert();
-      toSunLocal.applyQuaternion(deviceQuaternionInverse);
+      const sunVectorLocal = sunVector.clone();
+      sunVectorLocal.applyQuaternion(deviceQuaternionInverse);
 
-      // Point arrow at this direction
-      // Arrow's default direction is up (+Y), we need to rotate it to point at toSunLocal
+      // Point arrow (which points up by default) at the sun's direction in local space
       const arrowUp = new THREE.Vector3(0, 1, 0);
-      const quaternion = new THREE.Quaternion();
-      quaternion.setFromUnitVectors(arrowUp, toSunLocal.normalize());
-
-      arrowRef.current.quaternion.copy(quaternion);
+      const arrowQuaternion = new THREE.Quaternion();
+      arrowQuaternion.setFromUnitVectors(arrowUp, sunVectorLocal.normalize());
+      arrowRef.current.quaternion.copy(arrowQuaternion);
 
       // Check if device is pointing at sun (within 10° tolerance)
-      // Calculate angle between device forward and sun direction
+      // Device forward in world space is (0,0,-1) rotated by device orientation
+      const deviceForward = new THREE.Vector3(0, 0, -1);
+      deviceForward.applyQuaternion(deviceQuaternion);
       const angleBetween = deviceForward.angleTo(sunVector) * (180 / Math.PI);
       const aligned = angleBetween < 10;
       setIsAligned(aligned);
