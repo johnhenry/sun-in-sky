@@ -101,25 +101,33 @@ function CubeParticles({ mass, radius }) {
 
   // Initialize positions when component mounts or particle count changes
   useEffect(() => {
-    // Random initial positions (diffuse cloud)
+    // Random initial positions (irregular blob)
     const initial = [];
     const vels = [];
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      const r = 3 + Math.random() * 4; // Diffuse cloud radius 3-7 units
+
+      // Create an irregular blob by using non-uniform radius distribution
+      // Mix of different radii to create lumpy, non-spherical shape
+      const r = (Math.random() * Math.random()) * 2 + 0.5; // Irregular radius 0.5-2.5 units
+
+      // Add some asymmetry to make it look irregular
+      const asymmetryX = 1 + (Math.random() - 0.5) * 0.5;
+      const asymmetryY = 1 + (Math.random() - 0.5) * 0.5;
+      const asymmetryZ = 1 + (Math.random() - 0.5) * 0.5;
 
       initial.push({
-        x: r * Math.sin(phi) * Math.cos(theta),
-        y: r * Math.sin(phi) * Math.sin(theta),
-        z: r * Math.cos(phi)
+        x: r * Math.sin(phi) * Math.cos(theta) * asymmetryX,
+        y: r * Math.sin(phi) * Math.sin(theta) * asymmetryY,
+        z: r * Math.cos(phi) * asymmetryZ
       });
 
       vels.push({
-        x: (Math.random() - 0.5) * 0.02,
-        y: (Math.random() - 0.5) * 0.02,
-        z: (Math.random() - 0.5) * 0.02
+        x: (Math.random() - 0.5) * 0.01,
+        y: (Math.random() - 0.5) * 0.01,
+        z: (Math.random() - 0.5) * 0.01
       });
     }
 
@@ -258,8 +266,8 @@ function CubeParticles({ mass, radius }) {
  */
 function InfoOverlay({ mass, objectType }) {
   const getStateDescription = () => {
-    if (mass < HYDROSTATIC_EQUILIBRIUM_MASS) return 'Diffuse cloud - no hydrostatic equilibrium';
-    if (mass < DEUTERIUM_FUSION_MASS) return 'Gravitationally bound sphere';
+    if (mass < HYDROSTATIC_EQUILIBRIUM_MASS) return 'Irregular blob - gravity too weak';
+    if (mass < DEUTERIUM_FUSION_MASS) return 'Spherical - hydrostatic equilibrium achieved';
     if (mass < HYDROGEN_FUSION_MASS) return 'Deuterium fusion - brown dwarf glowing';
     if (mass < CARBON_FUSION_MASS) return 'Hydrogen fusion - main sequence star';
     return 'Massive star - intense fusion';
@@ -289,9 +297,9 @@ function InfoOverlay({ mass, objectType }) {
       </div>
       <div style={{ marginTop: '15px', fontSize: '12px', color: '#a1a1a8', lineHeight: '1.6' }}>
         {mass < HYDROSTATIC_EQUILIBRIUM_MASS ? (
-          'Below 2.5×10⁻¹⁰ M☉: Particles float freely - too small for gravity to form a sphere'
+          'Below 2.5×10⁻¹⁰ M☉: Irregular blob - gravity too weak to form a sphere'
         ) : mass < DEUTERIUM_FUSION_MASS ? (
-          'Above 2.5×10⁻¹⁰ M☉: Gravity pulls particles into a sphere!'
+          'Above 2.5×10⁻¹⁰ M☉: Gravity wins! Blob becomes spherical'
         ) : (
           'Fusion has begun - particles glow with nuclear energy'
         )}
