@@ -23,6 +23,9 @@ const SunPositionViz = () => {
   const [learnPanelOpen, setLearnPanelOpen] = useState(false);
   const [challengePanelOpen, setChallengePanelOpen] = useState(false);
 
+  // Geolocation state
+  const [gettingLocation, setGettingLocation] = useState(false);
+
   const containerRef = useRef(null);
   const playRef = useRef(null);
   const svgRef = useRef(null);
@@ -392,6 +395,51 @@ const SunPositionViz = () => {
     setMinuteOfYear(currentDay * minutesPerDay + hour * 60);
   };
 
+  // Set to current real-world date and time
+  const setCurrentTime = () => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    const minuteOfYear = (dayOfYear - 1) * minutesPerDay + hours * 60 + minutes;
+    setMinuteOfYear(Math.min(minuteOfYear, totalMinutesInYear - 1));
+  };
+
+  // Get current latitude from browser geolocation
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(Math.round(position.coords.latitude));
+        setGettingLocation(false);
+      },
+      (error) => {
+        setGettingLocation(false);
+        let message = 'Unable to get your location';
+        if (error.code === error.PERMISSION_DENIED) {
+          message = 'Location permission denied. Please enable location access in your browser settings.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          message = 'Location information is unavailable.';
+        } else if (error.code === error.TIMEOUT) {
+          message = 'Location request timed out.';
+        }
+        alert(message);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   // Keyboard navigation support
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -518,7 +566,71 @@ const SunPositionViz = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={setCurrentTime}
+            aria-label="Set to current date and time"
+            title="Set to current date and time"
+            style={{
+              padding: '8px 14px',
+              borderRadius: '6px',
+              border: '1px solid #393941',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+              backgroundColor: 'transparent',
+              color: '#e9e9ea',
+              transition: 'all 0.2s ease',
+              letterSpacing: '0.2px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = '#f4d03f';
+              e.currentTarget.style.color = '#f4d03f';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = '#393941';
+              e.currentTarget.style.color = '#e9e9ea';
+            }}
+          >
+            Now
+          </button>
+
+          <button
+            onClick={getCurrentLocation}
+            disabled={gettingLocation}
+            aria-label="Set to current latitude"
+            title="Use your device's location to set latitude"
+            style={{
+              padding: '8px 14px',
+              borderRadius: '6px',
+              border: '1px solid #393941',
+              cursor: gettingLocation ? 'wait' : 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+              backgroundColor: 'transparent',
+              color: gettingLocation ? '#a1a1a8' : '#e9e9ea',
+              transition: 'all 0.2s ease',
+              letterSpacing: '0.2px',
+              opacity: gettingLocation ? 0.6 : 1
+            }}
+            onMouseOver={(e) => {
+              if (!gettingLocation) {
+                e.currentTarget.style.borderColor = '#4ade80';
+                e.currentTarget.style.color = '#4ade80';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (!gettingLocation) {
+                e.currentTarget.style.borderColor = '#393941';
+                e.currentTarget.style.color = '#e9e9ea';
+              }
+            }}
+          >
+            {gettingLocation ? 'Getting location...' : 'My Location'}
+          </button>
+
+          <div style={{ borderLeft: '1px solid #393941', height: '32px', margin: '0 4px' }} />
+
           <button
             onClick={() => setLearnPanelOpen(!learnPanelOpen)}
             aria-label={`${learnPanelOpen ? 'Close' : 'Open'} Learn Panel`}
