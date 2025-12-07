@@ -1,0 +1,53 @@
+{
+  "gradeLevel": "elementary",
+  "questions": [
+    {
+      "id": "q-elem-1",
+      "type": "multiple-choice",
+      "question": "What is mass?",
+      "options": [
+        { "id": "A", "text": "The amount of matter in an object", "correct": true },
+        { "id": "B", "text": "How bright something is", "correct": false },
+        { "id": "C", "text": "How hot something is", "correct": false },
+        { "id": "D", "text": "The size of an object", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-elem-2",
+      "type": "multiple-choice",
+      "question": "Why don't planets shine like stars?",
+      "options": [
+        { "id": "A", "text": "They are too cold", "correct": false },
+        { "id": "B", "text": "They don't have enough mass to start fusion", "correct": true },
+        { "id": "C", "text": "They are made of different materials", "correct": false },
+        { "id": "D", "text": "They are too far from other stars", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-elem-3",
+      "type": "multiple-choice",
+      "question": "What is a brown dwarf?",
+      "options": [
+        { "id": "A", "text": "A very small planet", "correct": false },
+        { "id": "B", "text": "A failed star that's too small to sustain fusion", "correct": true },
+        { "id": "C", "text": "A dying star", "correct": false },
+        { "id": "D", "text": "A type of black hole", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-elem-4",
+      "type": "multiple-choice",
+      "question": "Which type of star lives the longest?",
+      "options": [
+        { "id": "A", "text": "Massive blue stars", "correct": false },
+        { "id": "B", "text": "Sun-like yellow stars", "correct": false },
+        { "id": "C", "text": "Small red dwarf stars", "correct": true },
+        { "id": "D", "text": "All stars live the same amount of time", "correct": false }
+      ],
+      "correctAnswer": "C"
+    }
+  ]
+}

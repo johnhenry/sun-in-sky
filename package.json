@@ -1,9 +1,9 @@
 {
-  "name": "sun-in-sky",
+  "name": "educational-apps",
   "version": "1.0.0",
   "type": "module",
-  "description": "Solar altitude visualization throughout the day and year",
-  "homepage": "https://yourusername.github.io/sun-in-sky",
+  "description": "Interactive educational visualization apps for astronomy and physics",
+  "homepage": "https://yourusername.github.io/educational-apps",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -19,6 +19,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.1.1",
     "remark-gfm": "^4.0.1",
     "three": "^0.181.2"
   },
@@ -29,16 +30,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/sun-in-sky.git"
+    "url": "https://github.com/yourusername/educational-apps.git"
   },
   "keywords": [
     "astronomy",
     "education",
+    "physics",
+    "gravity",
     "solar",
     "seasons",
+    "stellar-mass",
     "visualization",
     "teaching",
-    "STEM"
+    "STEM",
+    "interactive"
   ],
   "author": "",
   "license": "MIT"

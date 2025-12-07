@@ -1,28 +1,34 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import Panel from '../shared/Panel';
-import { useLocalStorage } from '../../../hooks/useLocalStorage';
-import { STORAGE_KEYS } from '../../../utils/localStorage';
+import Panel from '../Panel/Panel';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { getStorageKeys } from '../../utils/localStorage';
 import './LearnPanel.css';
 
-// Import lesson data (generated from markdown)
-import elementaryData from '../../../data/lessons/elementary.json';
-import middleSchoolData from '../../../data/lessons/middle-school.json';
-import highSchoolData from '../../../data/lessons/high-school.json';
-
-// Merge all lessons into a single array, ordered from easier to harder
-const ALL_LESSONS = [
-  ...elementaryData.lessons.map((lesson, index) => ({ ...lesson, number: index + 1, difficulty: 'Beginner' })),
-  ...middleSchoolData.lessons.map((lesson, index) => ({ ...lesson, number: elementaryData.lessons.length + index + 1, difficulty: 'Intermediate' })),
-  ...highSchoolData.lessons.map((lesson, index) => ({ ...lesson, number: elementaryData.lessons.length + middleSchoolData.lessons.length + index + 1, difficulty: 'Advanced' }))
-];
-
-export default function LearnPanel({ isOpen, onToggle, onAppControl, showToggleButton = true }) {
+/**
+ * LearnPanel - Shared educational content panel component
+ * @param {boolean} isOpen - Whether the panel is open
+ * @param {function} onToggle - Callback to toggle panel
+ * @param {Array} lessons - Array of lesson objects with structure:
+ *   { id, title, content, difficulty, number }
+ * @param {string} appId - App identifier for scoped localStorage
+ * @param {function} onAppControl - Optional callback for app-specific controls
+ * @param {boolean} showToggleButton - Whether to show the toggle button
+ */
+export default function LearnPanel({
+  isOpen,
+  onToggle,
+  lessons = [],
+  appId = 'app',
+  onAppControl,
+  showToggleButton = true
+}) {
+  const STORAGE_KEYS = getStorageKeys(appId);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [lessonProgress, setLessonProgress] = useLocalStorage(STORAGE_KEYS.LESSON_PROGRESS, {});
 
-  const currentLesson = ALL_LESSONS[currentLessonIndex];
+  const currentLesson = lessons[currentLessonIndex];
 
   // Mark lesson as visited
   useEffect(() => {
@@ -79,10 +85,10 @@ export default function LearnPanel({ isOpen, onToggle, onAppControl, showToggleB
       {/* Lesson Navigator */}
       <div className="lesson-navigator">
         <div className="panel-section-title">
-          Lessons ({getCompletionCount()}/{ALL_LESSONS.length} completed)
+          Lessons ({getCompletionCount()}/{lessons.length} completed)
         </div>
         <div className="lesson-list">
-          {ALL_LESSONS.map((lesson, index) => (
+          {lessons.map((lesson, index) => (
             <button
               key={lesson.id}
               className={`lesson-card ${currentLessonIndex === index ? 'active' : ''} ${
@@ -173,7 +179,7 @@ export default function LearnPanel({ isOpen, onToggle, onAppControl, showToggleB
             </button>
             <button
               className="nav-button"
-              disabled={currentLessonIndex === ALL_LESSONS.length - 1}
+              disabled={currentLessonIndex === lessons.length - 1}
               onClick={() => setCurrentLessonIndex(prev => prev + 1)}
               aria-label="Go to next lesson"
             >

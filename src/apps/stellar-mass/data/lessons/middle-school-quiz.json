@@ -1,0 +1,53 @@
+{
+  "gradeLevel": "middle-school",
+  "questions": [
+    {
+      "id": "q-middle-1",
+      "type": "multiple-choice",
+      "question": "How does a star's luminosity (brightness) relate to its mass?",
+      "options": [
+        { "id": "A", "text": "Luminosity is proportional to mass", "correct": false },
+        { "id": "B", "text": "Luminosity is proportional to mass cubed", "correct": true },
+        { "id": "C", "text": "Luminosity decreases as mass increases", "correct": false },
+        { "id": "D", "text": "There is no relationship", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-2",
+      "type": "multiple-choice",
+      "question": "What happens to a star with initial mass greater than 20 solar masses when it dies?",
+      "options": [
+        { "id": "A", "text": "It becomes a white dwarf", "correct": false },
+        { "id": "B", "text": "It becomes a neutron star", "correct": false },
+        { "id": "C", "text": "It collapses into a black hole", "correct": true },
+        { "id": "D", "text": "It explodes completely leaving nothing behind", "correct": false }
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "q-middle-3",
+      "type": "multiple-choice",
+      "question": "What is nuclear fusion?",
+      "options": [
+        { "id": "A", "text": "Splitting heavy atoms into lighter ones", "correct": false },
+        { "id": "B", "text": "Combining light atoms into heavier ones", "correct": true },
+        { "id": "C", "text": "Atoms sharing electrons", "correct": false },
+        { "id": "D", "text": "Atoms colliding and bouncing off each other", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-4",
+      "type": "multiple-choice",
+      "question": "What is the typical mass range for a neutron star?",
+      "options": [
+        { "id": "A", "text": "0.08 to 0.5 solar masses", "correct": false },
+        { "id": "B", "text": "1 to 3 solar masses", "correct": true },
+        { "id": "C", "text": "8 to 20 solar masses", "correct": false },
+        { "id": "D", "text": "Greater than 50 solar masses", "correct": false }
+      ],
+      "correctAnswer": "B"
+    }
+  ]
+}

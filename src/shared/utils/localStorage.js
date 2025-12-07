@@ -1,18 +1,28 @@
 /**
- * Local Storage Utilities for Sun in Sky
+ * Local Storage Utilities for Educational Apps
  * Manages all localStorage operations with error handling and migrations
+ * Supports app-scoped storage keys for multi-app architecture
  */
 
 const STORAGE_VERSION = 1;
 
-export const STORAGE_KEYS = {
-  VERSION: 'sun-in-sky:version',
-  LESSON_PROGRESS: 'sun-in-sky:lesson-progress',
-  QUIZ_STATE: 'sun-in-sky:quiz-state',
-  BADGES: 'sun-in-sky:badges',
-  PREFERENCES: 'sun-in-sky:preferences',
-  TIMESTAMP: 'sun-in-sky:last-updated'
-};
+/**
+ * Generate app-scoped storage keys
+ * Badges are shared across all apps, other data is app-specific
+ */
+export function getStorageKeys(appId) {
+  return {
+    VERSION: `${appId}:version`,
+    LESSON_PROGRESS: `${appId}:lesson-progress`,
+    QUIZ_STATE: `${appId}:quiz-state`,
+    BADGES: 'shared:badges',  // Shared across all apps
+    PREFERENCES: `${appId}:preferences`,
+    TIMESTAMP: `${appId}:last-updated`
+  };
+}
+
+// Legacy support for sun-in-sky app
+export const STORAGE_KEYS = getStorageKeys('sun-in-sky');
 
 /**
  * Safely get item from localStorage with JSON parsing
@@ -74,26 +84,24 @@ export function clearAllStorage() {
 
 /**
  * Initialize storage with default values
+ * @param {string} appId - The app identifier for scoped storage
  */
-export function initializeStorage() {
-  const version = getStorageItem(STORAGE_KEYS.VERSION, 0);
+export function initializeStorage(appId = 'sun-in-sky') {
+  const KEYS = getStorageKeys(appId);
+  const version = getStorageItem(KEYS.VERSION, 0);
 
   if (version < STORAGE_VERSION) {
-    migrateStorage(version, STORAGE_VERSION);
+    migrateStorage(version, STORAGE_VERSION, KEYS);
   }
 
   // Initialize lesson progress if not exists
-  if (!getStorageItem(STORAGE_KEYS.LESSON_PROGRESS)) {
-    setStorageItem(STORAGE_KEYS.LESSON_PROGRESS, {
-      elementary: {},
-      'middle-school': {},
-      'high-school': {}
-    });
+  if (!getStorageItem(KEYS.LESSON_PROGRESS)) {
+    setStorageItem(KEYS.LESSON_PROGRESS, {});
   }
 
   // Initialize quiz state if not exists
-  if (!getStorageItem(STORAGE_KEYS.QUIZ_STATE)) {
-    setStorageItem(STORAGE_KEYS.QUIZ_STATE, {
+  if (!getStorageItem(KEYS.QUIZ_STATE)) {
+    setStorageItem(KEYS.QUIZ_STATE, {
       totalQuestions: 0,
       correctAnswers: 0,
       incorrectAnswers: 0,
@@ -105,17 +113,17 @@ export function initializeStorage() {
     });
   }
 
-  // Initialize badges if not exists
-  if (!getStorageItem(STORAGE_KEYS.BADGES)) {
-    setStorageItem(STORAGE_KEYS.BADGES, {
+  // Initialize badges if not exists (shared across all apps)
+  if (!getStorageItem(KEYS.BADGES)) {
+    setStorageItem(KEYS.BADGES, {
       earned: [],
       progress: {}
     });
   }
 
   // Initialize preferences if not exists
-  if (!getStorageItem(STORAGE_KEYS.PREFERENCES)) {
-    setStorageItem(STORAGE_KEYS.PREFERENCES, {
+  if (!getStorageItem(KEYS.PREFERENCES)) {
+    setStorageItem(KEYS.PREFERENCES, {
       preferredGradeLevel: 'elementary',
       learnPanelDefaultOpen: false,
       challengePanelDefaultOpen: false,
@@ -128,12 +136,12 @@ export function initializeStorage() {
 /**
  * Migrate storage from old version to new version
  */
-function migrateStorage(fromVersion, toVersion) {
+function migrateStorage(fromVersion, toVersion, storageKeys) {
   // Future migrations would go here
   // if (fromVersion < 1) migrateToV1();
   // if (fromVersion < 2) migrateToV2();
 
-  setStorageItem(STORAGE_KEYS.VERSION, toVersion);
+  setStorageItem(storageKeys.VERSION, toVersion);
 }
 
 /**

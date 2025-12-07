@@ -1,0 +1,53 @@
+{
+  "gradeLevel": "high-school",
+  "questions": [
+    {
+      "id": "q-high-1",
+      "type": "multiple-choice",
+      "question": "What is the Chandrasekhar limit?",
+      "options": [
+        { "id": "A", "text": "The maximum mass of a white dwarf (~1.4 solar masses)", "correct": true },
+        { "id": "B", "text": "The minimum mass required to start fusion", "correct": false },
+        { "id": "C", "text": "The mass at which a star becomes a black hole", "correct": false },
+        { "id": "D", "text": "The maximum luminosity a star can have", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-high-2",
+      "type": "multiple-choice",
+      "question": "What determines the Schwarzschild radius of a black hole?",
+      "options": [
+        { "id": "A", "text": "Its temperature", "correct": false },
+        { "id": "B", "text": "Its mass (r_s = 2GM/c²)", "correct": true },
+        { "id": "C", "text": "Its spin rate", "correct": false },
+        { "id": "D", "text": "Its age", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-3",
+      "type": "multiple-choice",
+      "question": "Why can't massive stars fuse iron to release energy?",
+      "options": [
+        { "id": "A", "text": "Iron is too heavy for fusion", "correct": false },
+        { "id": "B", "text": "Iron-56 has the highest binding energy per nucleon", "correct": true },
+        { "id": "C", "text": "The core isn't hot enough", "correct": false },
+        { "id": "D", "text": "Iron is radioactive", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-4",
+      "type": "multiple-choice",
+      "question": "What is the Eddington limit?",
+      "options": [
+        { "id": "A", "text": "The maximum temperature of a star", "correct": false },
+        { "id": "B", "text": "The maximum luminosity before radiation pressure balances gravity", "correct": true },
+        { "id": "C", "text": "The minimum mass for fusion", "correct": false },
+        { "id": "D", "text": "The maximum size of a neutron star", "correct": false }
+      ],
+      "correctAnswer": "B"
+    }
+  ]
+}

@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react';
-import Panel from '../shared/Panel';
-import { useLocalStorage } from '../../../hooks/useLocalStorage';
-import { STORAGE_KEYS } from '../../../utils/localStorage';
-import { BADGES, getBadgeTier } from '../../../data/badges';
-import { checkForNewBadges, awardBadge, calculateTotalPoints } from '../../../utils/badgeLogic';
+import Panel from '../Panel/Panel';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { getStorageKeys } from '../../utils/localStorage';
+import { BADGES, getBadgeTier } from '../../data/badges';
+import { checkForNewBadges, awardBadge, calculateTotalPoints } from '../../utils/badgeLogic';
 import './ChallengePanel.css';
 
-// Import quiz questions (generated from lessons)
-import elementaryQuiz from '../../../data/lessons/elementary-quiz.json';
-import middleSchoolQuiz from '../../../data/lessons/middle-school-quiz.json';
-import highSchoolQuiz from '../../../data/lessons/high-school-quiz.json';
-
-const ALL_QUESTIONS = [
-  ...(elementaryQuiz?.questions || []),
-  ...(middleSchoolQuiz?.questions || []),
-  ...(highSchoolQuiz?.questions || [])
-];
-
-export default function ChallengePanel({ isOpen, onToggle, showToggleButton = true }) {
+/**
+ * ChallengePanel - Shared quiz and badge panel component
+ * @param {boolean} isOpen - Whether the panel is open
+ * @param {function} onToggle - Callback to toggle panel
+ * @param {Array} questions - Array of question objects with structure:
+ *   { id, question, answers: {A, B, C, D}, correctAnswer, explanation }
+ * @param {string} appId - App identifier for scoped localStorage
+ * @param {boolean} showToggleButton - Whether to show the toggle button
+ */
+export default function ChallengePanel({
+  isOpen,
+  onToggle,
+  questions = [],
+  appId = 'app',
+  showToggleButton = true
+}) {
+  const STORAGE_KEYS = getStorageKeys(appId);
   const [quizState, setQuizState] = useLocalStorage(STORAGE_KEYS.QUIZ_STATE, {
     totalQuestions: 0,
     correctAnswers: 0,
@@ -31,11 +36,7 @@ export default function ChallengePanel({ isOpen, onToggle, showToggleButton = tr
     progress: {}
   });
 
-  const [lessonProgress] = useLocalStorage(STORAGE_KEYS.LESSON_PROGRESS, {
-    elementary: {},
-    'middle-school': {},
-    'high-school': {}
-  });
+  const [lessonProgress] = useLocalStorage(STORAGE_KEYS.LESSON_PROGRESS, {});
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -44,7 +45,7 @@ export default function ChallengePanel({ isOpen, onToggle, showToggleButton = tr
   const [newBadge, setNewBadge] = useState(null);
 
   // Get unanswered questions
-  const unansweredQuestions = ALL_QUESTIONS.filter(
+  const unansweredQuestions = questions.filter(
     q => !quizState.answeredQuestions[q.id]
   );
 
