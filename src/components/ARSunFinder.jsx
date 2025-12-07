@@ -129,7 +129,8 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     arrowGroup.add(glow);
     glowRef.current = glow;
 
-    // Position arrow pointing up initially
+    // Position arrow in front of camera (camera is at origin)
+    arrowGroup.position.set(0, 0, -5); // 5 units in front
     arrowGroup.rotation.x = 0;
     scene.add(arrowGroup);
     arrowRef.current = arrowGroup;
@@ -203,21 +204,21 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
       const cameraEuler = new THREE.Euler(betaRad, alphaRad, -gammaRad, 'YXZ');
       cameraRef.current.setRotationFromEuler(cameraEuler);
 
-      // STEP 2: Position arrow at sun's direction in world space
-      // Convert sun's azimuth/altitude to 3D position
+      // STEP 2: Position arrow to point at sun's direction in world space
+      // Convert sun's azimuth/altitude to 3D direction
       const sunAzimuthRad = (sunAzimuth * Math.PI) / 180;
       const sunAltitudeRad = (sunAltitude * Math.PI) / 180;
 
-      // Place sun at fixed distance in world space
-      const distance = 10; // Arbitrary distance
+      // Place sun at large distance in world space (direction vector)
+      const distance = 100; // Large distance
       const sunX = distance * Math.cos(sunAltitudeRad) * Math.sin(sunAzimuthRad);
       const sunY = distance * Math.sin(sunAltitudeRad);
       const sunZ = -distance * Math.cos(sunAltitudeRad) * Math.cos(sunAzimuthRad);
 
       const sunPosition = new THREE.Vector3(sunX, sunY, sunZ);
 
-      // Point arrow (at origin) toward sun position
-      const arrowPosition = new THREE.Vector3(0, 0, 0);
+      // Point arrow (at position 0,0,-5) toward sun position
+      const arrowPosition = new THREE.Vector3(0, 0, -5);
       const direction = new THREE.Vector3().subVectors(sunPosition, arrowPosition).normalize();
 
       // Arrow points up (+Y) by default, rotate it to point at sun
