@@ -31,6 +31,9 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     gamma: 0   // Left-to-right tilt (-90 to 90°)
   });
 
+  // Store update function in ref so animation loop can call it
+  const updateArrowOrientationRef = useRef(null);
+
   // Request permissions (required on iOS 13+)
   useEffect(() => {
     const requestPermission = async () => {
@@ -155,6 +158,10 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
+      // Call update function if it exists
+      if (updateArrowOrientationRef.current) {
+        updateArrowOrientationRef.current();
+      }
       renderer.render(scene, camera);
     };
     animate();
@@ -177,6 +184,63 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     };
   }, [permissionGranted]);
 
+  // Define arrow update function that captures latest props
+  useEffect(() => {
+    updateArrowOrientationRef.current = () => {
+      if (!arrowRef.current || !glowRef.current) return;
+
+      const { alpha, beta, gamma } = deviceOrientationRef.current;
+
+      // Calculate device's pointing direction
+      // alpha: compass heading (0° = North, 90° = East, 180° = South, 270° = West)
+      // beta: pitch (tilt forward/back)
+      // gamma: roll (tilt left/right)
+
+      // Convert to radians
+      const deviceHeading = alpha * (Math.PI / 180);
+      const devicePitch = beta * (Math.PI / 180);
+
+      // Sun's position in spherical coordinates
+      const sunHeading = sunAzimuth * (Math.PI / 180);
+      const sunElevation = sunAltitude * (Math.PI / 180);
+
+      // Calculate difference angles
+      let headingDiff = sunHeading - deviceHeading;
+
+      // Normalize to -π to π
+      while (headingDiff > Math.PI) headingDiff -= 2 * Math.PI;
+      while (headingDiff < -Math.PI) headingDiff += 2 * Math.PI;
+
+      const elevationDiff = sunElevation - devicePitch;
+
+      // Rotate arrow to point at sun
+      // Y-axis rotation = horizontal (left/right)
+      // X-axis rotation = vertical (up/down)
+      arrowRef.current.rotation.y = -headingDiff;
+      arrowRef.current.rotation.x = elevationDiff;
+
+      // Check if device is pointing at sun (within 10° tolerance)
+      const headingError = Math.abs(headingDiff) * (180 / Math.PI);
+      const elevationError = Math.abs(elevationDiff) * (180 / Math.PI);
+      const totalError = Math.sqrt(headingError * headingError + elevationError * elevationError);
+
+      const aligned = totalError < 10;
+      setIsAligned(aligned);
+
+      // Animate glow when aligned
+      if (aligned) {
+        glowRef.current.material.opacity = 0.4 + 0.2 * Math.sin(Date.now() * 0.005);
+        // Make arrow brighter
+        arrowRef.current.children[0].material.emissiveIntensity = 0.8;
+        arrowRef.current.children[1].material.emissiveIntensity = 1.0;
+      } else {
+        glowRef.current.material.opacity = 0;
+        arrowRef.current.children[0].material.emissiveIntensity = 0.3;
+        arrowRef.current.children[1].material.emissiveIntensity = 0.5;
+      }
+    };
+  }, [sunAzimuth, sunAltitude]);
+
   // Handle device orientation
   useEffect(() => {
     if (!permissionGranted) return;
@@ -187,8 +251,6 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
         beta: event.beta || 0,    // Pitch (-180 to 180°)
         gamma: event.gamma || 0   // Roll (-90 to 90°)
       };
-
-      updateArrowOrientation();
     };
 
     window.addEventListener('deviceorientation', handleOrientation, true);
@@ -196,62 +258,7 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation, true);
     };
-  }, [permissionGranted, sunAzimuth, sunAltitude]);
-
-  // Update arrow orientation based on device sensors
-  const updateArrowOrientation = () => {
-    if (!arrowRef.current || !glowRef.current) return;
-
-    const { alpha, beta, gamma } = deviceOrientationRef.current;
-
-    // Calculate device's pointing direction
-    // alpha: compass heading (0° = North, 90° = East, 180° = South, 270° = West)
-    // beta: pitch (tilt forward/back)
-    // gamma: roll (tilt left/right)
-
-    // Convert to radians
-    const deviceHeading = alpha * (Math.PI / 180);
-    const devicePitch = beta * (Math.PI / 180);
-
-    // Sun's position in spherical coordinates
-    const sunHeading = sunAzimuth * (Math.PI / 180);
-    const sunElevation = sunAltitude * (Math.PI / 180);
-
-    // Calculate difference angles
-    let headingDiff = sunHeading - deviceHeading;
-
-    // Normalize to -π to π
-    while (headingDiff > Math.PI) headingDiff -= 2 * Math.PI;
-    while (headingDiff < -Math.PI) headingDiff += 2 * Math.PI;
-
-    const elevationDiff = sunElevation - devicePitch;
-
-    // Rotate arrow to point at sun
-    // Y-axis rotation = horizontal (left/right)
-    // X-axis rotation = vertical (up/down)
-    arrowRef.current.rotation.y = -headingDiff;
-    arrowRef.current.rotation.x = elevationDiff;
-
-    // Check if device is pointing at sun (within 10° tolerance)
-    const headingError = Math.abs(headingDiff) * (180 / Math.PI);
-    const elevationError = Math.abs(elevationDiff) * (180 / Math.PI);
-    const totalError = Math.sqrt(headingError * headingError + elevationError * elevationError);
-
-    const aligned = totalError < 10;
-    setIsAligned(aligned);
-
-    // Animate glow when aligned
-    if (aligned) {
-      glowRef.current.material.opacity = 0.4 + 0.2 * Math.sin(Date.now() * 0.005);
-      // Make arrow brighter
-      arrowRef.current.children[0].material.emissiveIntensity = 0.8;
-      arrowRef.current.children[1].material.emissiveIntensity = 1.0;
-    } else {
-      glowRef.current.material.opacity = 0;
-      arrowRef.current.children[0].material.emissiveIntensity = 0.3;
-      arrowRef.current.children[1].material.emissiveIntensity = 0.5;
-    }
-  };
+  }, [permissionGranted]);
 
   if (permissionDenied) {
     return (
