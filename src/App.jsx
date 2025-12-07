@@ -499,19 +499,23 @@ const SunPositionViz = () => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '12px',
-        padding: '12px 16px',
-        backgroundColor: '#27272a',
-        borderRadius: '8px',
-        border: '1px solid #393941',
+        marginBottom: '16px',
+        paddingBottom: '12px',
+        borderBottom: '1px solid #393941',
         flexWrap: 'wrap',
         gap: '12px'
       }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <h1 style={{ fontSize: '20px', margin: 0, fontWeight: 600, color: '#e9e9ea' }}>
-            ☀️ Sun in Sky
+          <h1 style={{
+            fontSize: '24px',
+            margin: 0,
+            fontWeight: 700,
+            color: '#e9e9ea',
+            letterSpacing: '-0.5px'
+          }}>
+            Sun in Sky
           </h1>
-          <p style={{ fontSize: '11px', margin: '4px 0 0 0', color: '#a1a1a8' }}>
+          <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#a1a1a8', fontWeight: 400 }}>
             Interactive solar position visualization
           </p>
         </div>
@@ -522,28 +526,31 @@ const SunPositionViz = () => {
             aria-label={`${learnPanelOpen ? 'Close' : 'Open'} Learn Panel`}
             aria-expanded={learnPanelOpen}
             style={{
-              padding: '8px 16px',
+              padding: '8px 18px',
               borderRadius: '6px',
-              border: 'none',
+              border: learnPanelOpen ? '1px solid #8c7ae6' : '1px solid #393941',
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: 600,
-              backgroundColor: learnPanelOpen ? '#8c7ae6' : '#393941',
+              backgroundColor: learnPanelOpen ? '#8c7ae6' : 'transparent',
               color: learnPanelOpen ? '#1a1a1c' : '#e9e9ea',
               transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
+              letterSpacing: '0.3px'
             }}
             onMouseOver={(e) => {
-              if (!learnPanelOpen) e.currentTarget.style.backgroundColor = '#4a4a52';
+              if (!learnPanelOpen) {
+                e.currentTarget.style.borderColor = '#8c7ae6';
+                e.currentTarget.style.color = '#8c7ae6';
+              }
             }}
             onMouseOut={(e) => {
-              if (!learnPanelOpen) e.currentTarget.style.backgroundColor = '#393941';
+              if (!learnPanelOpen) {
+                e.currentTarget.style.borderColor = '#393941';
+                e.currentTarget.style.color = '#e9e9ea';
+              }
             }}
           >
-            <span style={{ fontSize: '16px' }}>📚</span>
-            <span>Learn</span>
+            Learn
           </button>
 
           <button
@@ -551,28 +558,31 @@ const SunPositionViz = () => {
             aria-label={`${challengePanelOpen ? 'Close' : 'Open'} Challenge Panel`}
             aria-expanded={challengePanelOpen}
             style={{
-              padding: '8px 16px',
+              padding: '8px 18px',
               borderRadius: '6px',
-              border: 'none',
+              border: challengePanelOpen ? '1px solid #6ab0f3' : '1px solid #393941',
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: 600,
-              backgroundColor: challengePanelOpen ? '#6ab0f3' : '#393941',
+              backgroundColor: challengePanelOpen ? '#6ab0f3' : 'transparent',
               color: challengePanelOpen ? '#1a1a1c' : '#e9e9ea',
               transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
+              letterSpacing: '0.3px'
             }}
             onMouseOver={(e) => {
-              if (!challengePanelOpen) e.currentTarget.style.backgroundColor = '#4a4a52';
+              if (!challengePanelOpen) {
+                e.currentTarget.style.borderColor = '#6ab0f3';
+                e.currentTarget.style.color = '#6ab0f3';
+              }
             }}
             onMouseOut={(e) => {
-              if (!challengePanelOpen) e.currentTarget.style.backgroundColor = '#393941';
+              if (!challengePanelOpen) {
+                e.currentTarget.style.borderColor = '#393941';
+                e.currentTarget.style.color = '#e9e9ea';
+              }
             }}
           >
-            <span style={{ fontSize: '16px' }}>🎯</span>
-            <span>Challenge</span>
+            Challenge
           </button>
         </div>
       </div>
