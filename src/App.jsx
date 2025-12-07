@@ -917,7 +917,7 @@ const SunPositionViz = () => {
         })()}
 
         {/* Night region fallback (year view or when horizon not visible) */}
-        {(!viewMode === 'day' || !horizonVisible) && horizonVisible && (
+        {(viewMode !== 'day' || !horizonVisible) && horizonVisible && (
           <rect
             x={padding.left} y={horizonY}
             width={graphWidth} height={Math.min(yAxisMode === 'wide' ? nadirY : padding.top + graphHeight, padding.top + graphHeight) - horizonY}
