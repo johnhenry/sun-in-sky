@@ -953,67 +953,65 @@ const SunPositionViz = () => {
         </span>
       </div>
       
-      {/* Compass indicator (day view only) - FIX #1: Always visible, shows sun azimuth even below horizon */}
-      {viewMode === 'day' && (
+      {/* Compass indicator - Shows sun azimuth in both day and year views */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '6px 10px',
+        backgroundColor: '#27272a',
+        borderRadius: '5px',
+        marginBottom: '8px',
+        fontSize: '11px'
+      }}>
+        <span style={{ color: '#a1a1a8' }}>Sun Direction:</span>
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 10px',
-          backgroundColor: '#27272a',
-          borderRadius: '5px',
-          marginBottom: '8px',
-          fontSize: '11px'
+          position: 'relative',
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          border: '2px solid #393941',
+          backgroundColor: '#1a1a1c'
         }}>
-          <span style={{ color: '#a1a1a8' }}>Sun Direction:</span>
+          {/* Compass cardinal points */}
+          <div style={{ position: 'absolute', top: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8', fontWeight: 600 }}>N</div>
+          <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>E</div>
+          <div style={{ position: 'absolute', bottom: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8' }}>S</div>
+          <div style={{ position: 'absolute', left: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>W</div>
+          {/* Sun indicator - Uses smoothed rotation to prevent "swinging back" */}
           <div style={{
-            position: 'relative',
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            border: '2px solid #393941',
-            backgroundColor: '#1a1a1c'
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '2px',
+            height: '16px',
+            backgroundColor: '#f4d03f',
+            transformOrigin: 'bottom center',
+            transform: `translate(-50%, -100%) rotate(${compassRotation}deg)`,
+            transition: 'transform 0.3s ease'
           }}>
-            {/* Compass cardinal points */}
-            <div style={{ position: 'absolute', top: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8', fontWeight: 600 }}>N</div>
-            <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>E</div>
-            <div style={{ position: 'absolute', bottom: '-2px', left: '50%', transform: 'translateX(-50%)', fontSize: '8px', color: '#a1a1a8' }}>S</div>
-            <div style={{ position: 'absolute', left: '-2px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: '#a1a1a8' }}>W</div>
-            {/* Sun indicator - FIX ISSUE #2: Use smoothed rotation to prevent "swinging back" */}
             <div style={{
               position: 'absolute',
-              top: '50%',
+              top: '-3px',
               left: '50%',
-              width: '2px',
-              height: '16px',
+              transform: 'translateX(-50%)',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
               backgroundColor: '#f4d03f',
-              transformOrigin: 'bottom center',
-              transform: `translate(-50%, -100%) rotate(${compassRotation}deg)`,
-              transition: 'transform 0.3s ease'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: '-3px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#f4d03f',
-                boxShadow: '0 0 4px #f4d03f'
-              }} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ color: '#4ade80', fontWeight: 500 }}>
-              {currentAzimuth.toFixed(0)}° {getCardinalDirection(currentAzimuth)}
-            </span>
-            <span style={{ color: '#a1a1a8', fontSize: '9px' }}>
-              {currentAltitude.toFixed(1)}° elevation
-            </span>
+              boxShadow: '0 0 4px #f4d03f'
+            }} />
           </div>
         </div>
-      )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ color: '#4ade80', fontWeight: 500 }}>
+            {currentAzimuth.toFixed(0)}° {getCardinalDirection(currentAzimuth)}
+          </span>
+          <span style={{ color: '#a1a1a8', fontSize: '9px' }}>
+            {currentAltitude.toFixed(1)}° elevation
+          </span>
+        </div>
+      </div>
 
       {/* Time presets row */}
       <div style={{
@@ -1123,17 +1121,6 @@ const SunPositionViz = () => {
             {declination >= 0 ? '+' : ''}{declination.toFixed(1)}°
           </span>
         </div>
-        {viewMode === 'day' && (
-          <div>
-            <span style={{ color: '#a1a1a8' }}>Azimuth: </span>
-            <span
-              style={{ color: '#4ade80', fontWeight: 500 }}
-              title={`Sun direction: ${currentAzimuth.toFixed(1)}° from North`}
-            >
-              {currentAzimuth.toFixed(0)}° {getCardinalDirection(currentAzimuth)}
-            </span>
-          </div>
-        )}
         {viewMode === 'day' && (
           <>
             <div>
