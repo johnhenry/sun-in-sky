@@ -351,13 +351,21 @@ function EarthVisualization({
   hourOfDay = 12,
   currentAzimuth = 0,
   currentAltitude = 0,
-  referenceFrame = 'sun-fixed'
+  referenceFrame = 'sun-fixed',
+  onLoadComplete = null
 }) {
   return (
     <Canvas
       camera={{ position: [5, 3, 5], fov: 50 }}
       style={{ background: '#0a0a0a' }}
       shadows
+      onCreated={() => {
+        // Notify parent that 3D scene is ready
+        if (onLoadComplete) {
+          // Small delay to ensure everything is rendered
+          setTimeout(() => onLoadComplete(), 100);
+        }
+      }}
     >
       <Scene
         latitude={latitude}

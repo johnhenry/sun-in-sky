@@ -31,6 +31,9 @@ const SunPositionViz = () => {
   const [arModeActive, setArModeActive] = useState(false);
   const [hasOrientationSensors, setHasOrientationSensors] = useState(false);
 
+  // 3D Earth loading state
+  const [earthLoading, setEarthLoading] = useState(true);
+
   const containerRef = useRef(null);
   const playRef = useRef(null);
   const svgRef = useRef(null);
@@ -758,6 +761,15 @@ const SunPositionViz = () => {
             <stop offset="0%" stopColor="#f4d03f" />
             <stop offset="100%" stopColor="#e67e22" />
           </linearGradient>
+          <radialGradient id="sunDiskGradient">
+            <stop offset="0%" stopColor="#FDB813" stopOpacity="1" />
+            <stop offset="70%" stopColor="#f4d03f" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#e67e22" stopOpacity="0.7" />
+          </radialGradient>
+          <filter id="sunGlow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
         </defs>
         
         {/* Impossible zones (wide mode) */}
@@ -938,14 +950,45 @@ const SunPositionViz = () => {
           <circle cx={sunsetPoint.x} cy={sunsetPoint.y} r="4" fill="#e25f73" />
         )}
         
-        {/* Current position - sun emoji marker */}
+        {/* Current position - sun disk with glow */}
+        <g clipPath="url(#graphClip)">
+          {/* Outer glow */}
+          <circle
+            cx={currentX}
+            cy={currentY}
+            r="12"
+            fill="url(#sunDiskGradient)"
+            opacity="0.4"
+            filter="url(#sunGlow)"
+          />
+          {/* Main sun disk */}
+          <circle
+            cx={currentX}
+            cy={currentY}
+            r="8"
+            fill="url(#sunDiskGradient)"
+            stroke="#FDB813"
+            strokeWidth="1"
+          />
+          {/* Inner highlight */}
+          <circle
+            cx={currentX - 2}
+            cy={currentY - 2}
+            r="3"
+            fill="#FFFFFF"
+            opacity="0.6"
+          />
+        </g>
+
+        {/* Sun emoji overlay */}
         <text
           x={currentX}
           y={currentY}
-          fontSize="28"
+          fontSize="20"
           textAnchor="middle"
           dominantBaseline="middle"
-          style={{ cursor: 'pointer', filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}
+          style={{ cursor: 'pointer', pointerEvents: 'none' }}
+          opacity="0.9"
           role="img"
           aria-label={`Current sun position: ${currentAltitude.toFixed(1)}° at ${getDateTimeLabel()}`}
         >
@@ -1702,8 +1745,42 @@ const SunPositionViz = () => {
         width: '100%',
         borderRadius: '8px',
         overflow: 'hidden',
-        border: '1px solid #393941'
+        border: '1px solid #393941',
+        position: 'relative'
       }}>
+        {/* Loading overlay */}
+        {earthLoading && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: '#0a0a0a',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid #393941',
+              borderTop: '3px solid #f4d03f',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            <p style={{
+              marginTop: '16px',
+              color: '#a1a1a8',
+              fontSize: '12px'
+            }}>
+              Loading 3D Earth...
+            </p>
+          </div>
+        )}
+
         <EarthVisualization
           latitude={latitude}
           longitude={0}
@@ -1713,7 +1790,16 @@ const SunPositionViz = () => {
           currentAzimuth={currentAzimuth}
           currentAltitude={currentAltitude}
           referenceFrame={referenceFrame}
+          onLoadComplete={() => setEarthLoading(false)}
         />
+
+        {/* Add keyframes for spinner animation */}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
 
       {/* 3D View Controls and Legend */}
