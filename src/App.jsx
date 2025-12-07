@@ -100,6 +100,22 @@ const SunPositionViz = () => {
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const hours = Math.floor(hourOfDay);
     const mins = Math.round((hourOfDay % 1) * 60);
+
+    // Add year cycle indicator for planets with multi-year cycles
+    const earthYearsInPlanetYear = yearLength / 365;
+    const needsCycleIndicator = earthYearsInPlanetYear > 1.5;
+
+    if (needsCycleIndicator) {
+      const yearCycle = Math.floor(dayOfYear / 365) + 1;
+      if (yearCycle > 1) {
+        const toSuperscript = (num) => {
+          const superscripts = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+          return num.toString().split('').map(d => superscripts[parseInt(d)]).join('');
+        };
+        return `${dateStr}${toSuperscript(yearCycle)}, ${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+      }
+    }
+
     return `${dateStr}, ${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   };
   
@@ -568,70 +584,6 @@ const SunPositionViz = () => {
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
-            onClick={setCurrentTime}
-            aria-label="Set to current date and time"
-            title="Set to current date and time"
-            style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: '1px solid #393941',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: 500,
-              backgroundColor: 'transparent',
-              color: '#e9e9ea',
-              transition: 'all 0.2s ease',
-              letterSpacing: '0.2px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.borderColor = '#f4d03f';
-              e.currentTarget.style.color = '#f4d03f';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.borderColor = '#393941';
-              e.currentTarget.style.color = '#e9e9ea';
-            }}
-          >
-            Now
-          </button>
-
-          <button
-            onClick={getCurrentLocation}
-            disabled={gettingLocation}
-            aria-label="Set to current latitude"
-            title="Use your device's location to set latitude"
-            style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: '1px solid #393941',
-              cursor: gettingLocation ? 'wait' : 'pointer',
-              fontSize: '12px',
-              fontWeight: 500,
-              backgroundColor: 'transparent',
-              color: gettingLocation ? '#a1a1a8' : '#e9e9ea',
-              transition: 'all 0.2s ease',
-              letterSpacing: '0.2px',
-              opacity: gettingLocation ? 0.6 : 1
-            }}
-            onMouseOver={(e) => {
-              if (!gettingLocation) {
-                e.currentTarget.style.borderColor = '#4ade80';
-                e.currentTarget.style.color = '#4ade80';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!gettingLocation) {
-                e.currentTarget.style.borderColor = '#393941';
-                e.currentTarget.style.color = '#e9e9ea';
-              }
-            }}
-          >
-            {gettingLocation ? 'Getting location...' : 'My Location'}
-          </button>
-
-          <div style={{ borderLeft: '1px solid #393941', height: '32px', margin: '0 4px' }} />
-
-          <button
             onClick={() => setLearnPanelOpen(!learnPanelOpen)}
             aria-label={`${learnPanelOpen ? 'Close' : 'Open'} Learn Panel`}
             aria-expanded={learnPanelOpen}
@@ -881,25 +833,61 @@ const SunPositionViz = () => {
           );
         })}
         
-        {/* Grid - months (year view) - scaled to yearLength */}
-        {viewMode === 'year' && Array.from({ length: 12 }, (_, i) => ({
-          day: Math.floor((i / 12) * yearLength) + 1,
-          label: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i]
-        })).map((m, i) => {
-          const x = padding.left + ((m.day - 1) * minutesPerDay / totalMinutesInYear) * graphWidth;
-          // Show abbreviated labels on narrow screens
-          const showLabel = containerWidth > 500 || i % 2 === 0;
-          return (
-            <g key={m.day}>
-              <line x1={x} y1={padding.top} x2={x} y2={padding.top + graphHeight} stroke="#393941" strokeWidth="1" />
-              {showLabel && (
-                <text x={x + 2} y={padding.top + graphHeight + 14} fill="#a1a1a8" fontSize="9" textAnchor="start">
-                  {containerWidth > 600 ? m.label : m.label.charAt(0)}
-                </text>
-              )}
-            </g>
-          );
-        })}
+        {/* Grid - months (year view) - shows Earth months with year cycle indicators */}
+        {viewMode === 'year' && (() => {
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const earthYearsInPlanetYear = yearLength / 365;
+          const totalEarthMonths = Math.ceil(earthYearsInPlanetYear * 12);
+
+          // For very long years (>10 Earth years), show fewer labels to avoid clutter
+          const maxLabels = 60; // Maximum month labels to show
+          const step = totalEarthMonths > maxLabels ? Math.ceil(totalEarthMonths / maxLabels) : 1;
+
+          const months = [];
+          for (let i = 0; i < totalEarthMonths; i += step) {
+            const monthIndex = i % 12;
+            const yearCycle = Math.floor(i / 12) + 1;
+            // Map Earth months evenly across the planet's year
+            const dayInPlanetYear = Math.floor((i / totalEarthMonths) * yearLength) + 1;
+
+            // Only add if within planet year
+            if (dayInPlanetYear <= yearLength) {
+              months.push({
+                day: dayInPlanetYear,
+                label: monthNames[monthIndex],
+                yearCycle: yearCycle,
+                monthIndex: i
+              });
+            }
+          }
+
+          // Helper to convert number to superscript
+          const toSuperscript = (num) => {
+            const superscripts = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+            return num.toString().split('').map(d => superscripts[parseInt(d)]).join('');
+          };
+
+          return months.map((m, idx) => {
+            const x = padding.left + ((m.day - 1) * minutesPerDay / totalMinutesInYear) * graphWidth;
+            // Show cycle number if year has multiple Earth years
+            const needsCycleIndicator = earthYearsInPlanetYear > 1.5;
+            const showLabel = containerWidth > 500 || idx % 2 === 0;
+            const cycleIndicator = m.yearCycle > 1 ? toSuperscript(m.yearCycle) : '';
+
+            return (
+              <g key={m.monthIndex}>
+                <line x1={x} y1={padding.top} x2={x} y2={padding.top + graphHeight} stroke="#393941" strokeWidth="1" />
+                {showLabel && (
+                  <text x={x + 2} y={padding.top + graphHeight + 14} fill="#a1a1a8" fontSize="9" textAnchor="start">
+                    {containerWidth > 600
+                      ? (needsCycleIndicator ? `${m.label}${cycleIndicator}` : m.label)
+                      : (needsCycleIndicator ? `${m.label.charAt(0)}${m.yearCycle > 1 ? m.yearCycle : ''}` : m.label.charAt(0))}
+                  </text>
+                )}
+              </g>
+            );
+          });
+        })()}
         
         {/* Equinox reference (day view) */}
         {viewMode === 'day' && axialTilt > 0 && Math.abs(declination) > 2 && equinoxCurve && (
@@ -1020,14 +1008,45 @@ const SunPositionViz = () => {
       </svg>
       
       {/* Time controls - directly under graph */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
         gap: '8px',
         padding: '8px 0',
         borderBottom: '1px solid #393941',
         marginBottom: '12px'
       }}>
+        <label style={{ fontSize: '12px', color: '#a1a1a8', flexShrink: 0 }}>Time:</label>
+
+        <button
+          onClick={setCurrentTime}
+          aria-label="Set to current date and time"
+          title="Set to current date and time"
+          style={{
+            padding: '4px 10px',
+            borderRadius: '4px',
+            border: '1px solid #393941',
+            cursor: 'pointer',
+            fontSize: '11px',
+            fontWeight: 500,
+            backgroundColor: 'transparent',
+            color: '#e9e9ea',
+            transition: 'all 0.2s ease',
+            letterSpacing: '0.2px',
+            flexShrink: 0
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.borderColor = '#f4d03f';
+            e.currentTarget.style.color = '#f4d03f';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.borderColor = '#393941';
+            e.currentTarget.style.color = '#e9e9ea';
+          }}
+        >
+          Now
+        </button>
+
         <button
           onClick={() => setIsPlaying(!isPlaying)}
           aria-label={isPlaying ? 'Pause animation' : 'Play animation'}
@@ -1277,10 +1296,47 @@ const SunPositionViz = () => {
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
         {/* Latitude */}
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <label style={{ fontSize: '12px' }}>
-              Latitude: <span style={{ color: '#8c7ae6', fontWeight: 500 }}>{latitude}°</span>
-            </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '12px' }}>
+                Latitude: <span style={{ color: '#8c7ae6', fontWeight: 500 }}>{latitude}°</span>
+              </label>
+
+              <button
+                onClick={getCurrentLocation}
+                disabled={gettingLocation}
+                aria-label="Set to current latitude"
+                title="Use your device's location to set latitude"
+                style={{
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid #393941',
+                  cursor: gettingLocation ? 'wait' : 'pointer',
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  backgroundColor: 'transparent',
+                  color: gettingLocation ? '#a1a1a8' : '#e9e9ea',
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.2px',
+                  opacity: gettingLocation ? 0.6 : 1
+                }}
+                onMouseOver={(e) => {
+                  if (!gettingLocation) {
+                    e.currentTarget.style.borderColor = '#8c7ae6';
+                    e.currentTarget.style.color = '#8c7ae6';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!gettingLocation) {
+                    e.currentTarget.style.borderColor = '#393941';
+                    e.currentTarget.style.color = '#e9e9ea';
+                  }
+                }}
+              >
+                {gettingLocation ? 'Getting...' : 'Here'}
+              </button>
+            </div>
+
             {Math.abs(latitude) > arcticLat && axialTilt > 0 && (
               <span style={{ fontSize: '10px', color: '#e67e22' }}>Inside Arctic Circle</span>
             )}
