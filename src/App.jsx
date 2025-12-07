@@ -294,15 +294,6 @@ const SunPositionViz = () => {
   // Previous buggy check: first altitude === last altitude (false positives at ALL latitudes!)
   const isAtPole = viewMode === 'day' && Math.abs(latitude) > 89.9;
 
-  // Debug logging for verification (can be removed in production)
-  if (viewMode === 'day') {
-    const altitudes = curveData.map(p => p.altitude);
-    const minAlt = Math.min(...altitudes);
-    const maxAlt = Math.max(...altitudes);
-    const altitudeRange = maxAlt - minAlt;
-    console.log(`[Pole Detection] Lat: ${latitude}° | isAtPole: ${isAtPole} | Alt Range: ${altitudeRange.toFixed(2)}° | Min: ${minAlt.toFixed(1)}° Max: ${maxAlt.toFixed(1)}°`);
-  }
-  
   const horizonY = altToY(0);
   const horizonVisible = yMin <= 0 && yMax >= 0;
   const zenithY = altToY(90);

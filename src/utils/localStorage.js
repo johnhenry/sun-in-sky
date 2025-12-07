@@ -129,8 +129,6 @@ export function initializeStorage() {
  * Migrate storage from old version to new version
  */
 function migrateStorage(fromVersion, toVersion) {
-  console.log(`Migrating storage from v${fromVersion} to v${toVersion}`);
-
   // Future migrations would go here
   // if (fromVersion < 1) migrateToV1();
   // if (fromVersion < 2) migrateToV2();
