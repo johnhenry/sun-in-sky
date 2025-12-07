@@ -859,10 +859,66 @@ const SunPositionViz = () => {
           </>
         )}
         
-        {/* Night region */}
-        {horizonVisible && (
-          <rect 
-            x={padding.left} y={horizonY} 
+        {/* Twilight zones (day view only) */}
+        {viewMode === 'day' && horizonVisible && (() => {
+          const twilight6Y = altToY(-6);
+          const twilight12Y = altToY(-12);
+          const twilight18Y = altToY(-18);
+          const graphBottom = padding.top + graphHeight;
+
+          return (
+            <g clipPath="url(#graphClip)">
+              {/* Civil twilight: -6° to 0° (light blue) */}
+              {yMin <= -6 && (
+                <rect
+                  x={padding.left}
+                  y={horizonY}
+                  width={graphWidth}
+                  height={Math.max(0, Math.min(twilight6Y, graphBottom) - horizonY)}
+                  fill="rgba(135, 206, 250, 0.15)"
+                />
+              )}
+
+              {/* Nautical twilight: -12° to -6° (medium blue) */}
+              {yMin <= -12 && (
+                <rect
+                  x={padding.left}
+                  y={Math.max(padding.top, twilight6Y)}
+                  width={graphWidth}
+                  height={Math.max(0, Math.min(twilight12Y, graphBottom) - Math.max(padding.top, twilight6Y))}
+                  fill="rgba(70, 130, 180, 0.2)"
+                />
+              )}
+
+              {/* Astronomical twilight: -18° to -12° (dark blue) */}
+              {yMin <= -18 && (
+                <rect
+                  x={padding.left}
+                  y={Math.max(padding.top, twilight12Y)}
+                  width={graphWidth}
+                  height={Math.max(0, Math.min(twilight18Y, graphBottom) - Math.max(padding.top, twilight12Y))}
+                  fill="rgba(25, 25, 112, 0.25)"
+                />
+              )}
+
+              {/* Night (below -18°): deeper darkness */}
+              {yMin < -18 && (
+                <rect
+                  x={padding.left}
+                  y={Math.max(padding.top, twilight18Y)}
+                  width={graphWidth}
+                  height={Math.max(0, graphBottom - Math.max(padding.top, twilight18Y))}
+                  fill="rgba(10, 10, 30, 0.4)"
+                />
+              )}
+            </g>
+          );
+        })()}
+
+        {/* Night region fallback (year view or when horizon not visible) */}
+        {(!viewMode === 'day' || !horizonVisible) && horizonVisible && (
+          <rect
+            x={padding.left} y={horizonY}
             width={graphWidth} height={Math.min(yAxisMode === 'wide' ? nadirY : padding.top + graphHeight, padding.top + graphHeight) - horizonY}
             fill="rgba(35, 35, 52, 0.5)"
             clipPath="url(#graphClip)"
@@ -1457,12 +1513,61 @@ const SunPositionViz = () => {
               </div>
             )}
             {dayType !== 'normal' && (
-              <span style={{ 
+              <span style={{
                 color: dayType === 'midnight-sun' ? '#f4d03f' : '#8c7ae6',
-                fontWeight: 500 
+                fontWeight: 500
               }}>
                 {dayType === 'midnight-sun' ? '☀ Midnight Sun' : '● Polar Night'}
               </span>
+            )}
+
+            {/* Twilight zone legend (when visible) */}
+            {yMin <= -6 && (
+              <div style={{
+                marginTop: '8px',
+                fontSize: '9px',
+                borderTop: '1px solid #393941',
+                paddingTop: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px'
+              }}>
+                <div style={{ color: '#a1a1a8', marginBottom: '2px', fontWeight: 500 }}>Twilight Zones:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '12px',
+                    height: '8px',
+                    backgroundColor: 'rgba(135, 206, 250, 0.4)',
+                    border: '1px solid rgba(135, 206, 250, 0.6)'
+                  }}></span>
+                  <span>Civil (0° to -6°)</span>
+                </div>
+                {yMin <= -12 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '12px',
+                      height: '8px',
+                      backgroundColor: 'rgba(70, 130, 180, 0.4)',
+                      border: '1px solid rgba(70, 130, 180, 0.6)'
+                    }}></span>
+                    <span>Nautical (-6° to -12°)</span>
+                  </div>
+                )}
+                {yMin <= -18 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '12px',
+                      height: '8px',
+                      backgroundColor: 'rgba(25, 25, 112, 0.5)',
+                      border: '1px solid rgba(25, 25, 112, 0.7)'
+                    }}></span>
+                    <span>Astronomical (-12° to -18°)</span>
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
