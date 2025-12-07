@@ -13,6 +13,12 @@ import * as THREE from 'three';
 const PARTICLE_COUNT = 100;
 const CUBE_SIZE = 0.05;
 
+// Physical constants (in solar masses)
+const HYDROSTATIC_EQUILIBRIUM_MASS = 2.5e-10; // ~Ceres mass
+const DEUTERIUM_FUSION_MASS = 0.013;
+const HYDROGEN_FUSION_MASS = 0.08;
+const CARBON_FUSION_MASS = 8;
+
 /**
  * Generate evenly distributed points on a sphere using Fibonacci sphere algorithm
  */
@@ -47,13 +53,13 @@ function CubeParticles({ mass, radius }) {
   const collapseStartTime = useRef(null);
 
   // Determine if object has hydrostatic equilibrium
-  const hasHydrostaticEquilibrium = mass >= 0.001;
+  const hasHydrostaticEquilibrium = mass >= HYDROSTATIC_EQUILIBRIUM_MASS;
 
   // Determine fusion state
   const fusionState = useMemo(() => {
-    if (mass < 0.013) return 'none';
-    if (mass < 0.08) return 'deuterium';
-    if (mass < 8) return 'hydrogen';
+    if (mass < DEUTERIUM_FUSION_MASS) return 'none';
+    if (mass < HYDROGEN_FUSION_MASS) return 'deuterium';
+    if (mass < CARBON_FUSION_MASS) return 'hydrogen';
     return 'massive';
   }, [mass]);
 
@@ -252,10 +258,10 @@ function CubeParticles({ mass, radius }) {
  */
 function InfoOverlay({ mass, objectType }) {
   const getStateDescription = () => {
-    if (mass < 0.001) return 'Diffuse cloud - no hydrostatic equilibrium';
-    if (mass < 0.013) return 'Gravitationally bound - forming sphere';
-    if (mass < 0.08) return 'Deuterium fusion - brown dwarf glowing';
-    if (mass < 8) return 'Hydrogen fusion - main sequence star';
+    if (mass < HYDROSTATIC_EQUILIBRIUM_MASS) return 'Diffuse cloud - no hydrostatic equilibrium';
+    if (mass < DEUTERIUM_FUSION_MASS) return 'Gravitationally bound sphere';
+    if (mass < HYDROGEN_FUSION_MASS) return 'Deuterium fusion - brown dwarf glowing';
+    if (mass < CARBON_FUSION_MASS) return 'Hydrogen fusion - main sequence star';
     return 'Massive star - intense fusion';
   };
 
@@ -282,10 +288,10 @@ function InfoOverlay({ mass, objectType }) {
         <span style={{ color: '#4ade80' }}>{getStateDescription()}</span>
       </div>
       <div style={{ marginTop: '15px', fontSize: '12px', color: '#a1a1a8', lineHeight: '1.6' }}>
-        {mass < 0.001 ? (
-          'Below 0.001 M☉: Particles float freely in space'
-        ) : mass < 0.013 ? (
-          'At 0.001 M☉: Gravity pulls particles into a sphere!'
+        {mass < HYDROSTATIC_EQUILIBRIUM_MASS ? (
+          'Below 2.5×10⁻¹⁰ M☉: Particles float freely - too small for gravity to form a sphere'
+        ) : mass < DEUTERIUM_FUSION_MASS ? (
+          'Above 2.5×10⁻¹⁰ M☉: Gravity pulls particles into a sphere!'
         ) : (
           'Fusion has begun - particles glow with nuclear energy'
         )}

@@ -57,7 +57,7 @@ const CONSTANTS = {
  * Mass thresholds (in solar masses)
  */
 const MASS_THRESHOLDS = [
-  { name: 'Hydrostatic Equilibrium', value: 0.001, color: '#4ade80', description: 'Minimum mass for spherical shape' },
+  { name: 'Hydrostatic Equilibrium', value: 2.5e-10, color: '#4ade80', description: 'Minimum mass for spherical shape (~Ceres)' },
   { name: 'Deuterium Fusion', value: 0.013, color: '#fb923c', description: 'Brown dwarf boundary' },
   { name: 'Hydrogen Fusion', value: 0.08, color: '#f4d03f', description: 'Main sequence stars begin' },
   { name: 'Carbon Fusion', value: 8, color: '#ef4444', description: 'Massive star threshold' },
@@ -65,6 +65,12 @@ const MASS_THRESHOLDS = [
   { name: 'Tolman-Oppenheimer-Volkoff Limit', value: 2.16, color: '#a78bfa', description: 'Neutron star maximum' },
   { name: 'Black Hole Formation', value: 2.5, color: '#000000', description: 'Inevitable collapse' }
 ];
+
+// Extract key threshold values for easy reference
+const HYDROSTATIC_EQUILIBRIUM_MASS = MASS_THRESHOLDS[0].value; // 2.5e-10 M☉ (~Ceres)
+const DEUTERIUM_FUSION_MASS = MASS_THRESHOLDS[1].value; // 0.013 M☉
+const HYDROGEN_FUSION_MASS = MASS_THRESHOLDS[2].value; // 0.08 M☉
+const CARBON_FUSION_MASS = MASS_THRESHOLDS[3].value; // 8 M☉
 
 /**
  * Preset masses (in solar masses)
@@ -91,10 +97,10 @@ const MASS_PRESETS = [
 function getRadiusRange(mass, objectType) {
   const massKg = mass * CONSTANTS.SOLAR_MASS_KG;
 
-  if (mass < 0.001) {
+  if (mass < HYDROSTATIC_EQUILIBRIUM_MASS) {
     // Below hydrostatic equilibrium - irregular shape
     return { min: 1000, max: 100000, realistic: 10000 };
-  } else if (mass < 0.013) {
+  } else if (mass < DEUTERIUM_FUSION_MASS) {
     // Gas giant / sub-brown dwarf: roughly Jupiter-sized
     return { min: 60000, max: 90000, realistic: 71000 };
   } else if (mass < 0.08) {
@@ -230,9 +236,9 @@ export default function StellarMassApp() {
 
   // Determine object type based on mass
   const objectType = useMemo(() => {
-    if (mass < 0.001) return 'Sub-planetary Object';
-    if (mass < 0.013) return 'Gas Giant Planet';
-    if (mass < 0.08) return 'Brown Dwarf';
+    if (mass < HYDROSTATIC_EQUILIBRIUM_MASS) return 'Diffuse Cloud / Irregular Object';
+    if (mass < DEUTERIUM_FUSION_MASS) return 'Planet (Rocky or Gas Giant)';
+    if (mass < HYDROGEN_FUSION_MASS) return 'Brown Dwarf';
     if (mass < 0.45) return 'Red Dwarf Star';
     if (mass < 2) return 'Sun-like Star';
     if (mass < 8) return 'Massive Star';
@@ -525,7 +531,7 @@ export default function StellarMassApp() {
               </div>
             </div>
 
-            {mass >= 0.001 && radius && (
+            {mass >= HYDROSTATIC_EQUILIBRIUM_MASS && radius && (
               <div style={{
                 padding: '20px',
                 backgroundColor: '#252528',
@@ -599,7 +605,7 @@ export default function StellarMassApp() {
         </div>
 
         {/* Radius Slider (only for objects with hydrostatic equilibrium) */}
-        {mass >= 0.001 && radius !== null && (
+        {mass >= HYDROSTATIC_EQUILIBRIUM_MASS && radius !== null && (
           <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
