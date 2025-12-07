@@ -402,7 +402,7 @@ export default function StellarMassApp() {
   };
 
   // Chart dimensions
-  const chartHeight = 300;
+  const chartHeight = 450;
   const chartPadding = { top: 20, right: 20, bottom: 50, left: 80 };
   const chartWidth = containerWidth - chartPadding.left - chartPadding.right;
   const chartInnerHeight = chartHeight - chartPadding.top - chartPadding.bottom;
@@ -412,19 +412,31 @@ export default function StellarMassApp() {
   const maxLogMass = 2;
   const logMassRange = maxLogMass - minLogMass;
 
-  // Log scale for Y-axis (temperature: 10^4 to 10^9 K)
-  const minLogTemp = 4;
-  const maxLogTemp = 9;
-  const logTempRange = maxLogTemp - minLogTemp;
+  // Two-zone Y-axis for better fusion detail
+  const fusionThreshold = Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM); // 10^6 K
+  const noFusionZoneHeight = 50; // px for below-fusion zone
+  const fusionZoneHeight = chartInnerHeight - noFusionZoneHeight;
+
+  // Log scale for Y-axis
+  const minLogTemp = 0;  // 10^0 K = 1 K (absolute zero region)
+  const maxLogTemp = 9;  // 10^9 K (top of chart)
 
   // Convert log mass to X position
   const massToX = (logMassValue) => {
     return ((logMassValue - minLogMass) / logMassRange) * chartWidth;
   };
 
-  // Convert log temperature to Y position (inverted: high temp at top)
+  // Convert log temperature to Y position (two-zone: compressed below fusion, expanded above)
   const tempToY = (logTempValue) => {
-    return chartInnerHeight - ((logTempValue - minLogTemp) / logTempRange) * chartInnerHeight;
+    if (logTempValue < fusionThreshold) {
+      // No fusion zone: 10^4 to 10^6 K compressed into bottom 50px
+      const t = (logTempValue - minLogTemp) / (fusionThreshold - minLogTemp);
+      return chartInnerHeight - (t * noFusionZoneHeight);
+    } else {
+      // Fusion zone: 10^6 to 10^9 K expanded into remaining space
+      const t = (logTempValue - fusionThreshold) / (maxLogTemp - fusionThreshold);
+      return chartInnerHeight - noFusionZoneHeight - (t * fusionZoneHeight);
+    }
   };
 
   // Generate X-axis tick marks (powers of 10)
@@ -437,13 +449,29 @@ export default function StellarMassApp() {
     });
   }
 
-  // Generate Y-axis tick marks (powers of 10)
+  // Generate Y-axis tick marks (focused on fusion zone)
   const yTicks = [];
-  for (let i = minLogTemp; i <= maxLogTemp; i++) {
+  // Add key temperatures in no-fusion zone (0 to 6)
+  for (let i = 0; i < 6; i++) {
+    // Only show every other tick in the compressed zone to avoid crowding
+    if (i % 2 === 0 || i === 5) {
+      const superscript = i === 0 ? '⁰' : i === 1 ? '¹' : i === 2 ? '²' : i === 3 ? '³' : i === 4 ? '⁴' : '⁵';
+      yTicks.push({
+        logValue: i,
+        y: tempToY(i),
+        label: `10${superscript} K`,
+        inNoFusionZone: true
+      });
+    }
+  }
+  // Add all temperatures in fusion zone
+  for (let i = 6; i <= maxLogTemp; i++) {
+    const superscript = i === 6 ? '⁶' : i === 7 ? '⁷' : i === 8 ? '⁸' : '⁹';
     yTicks.push({
       logValue: i,
       y: tempToY(i),
-      label: `10${i >= 0 ? '' : '⁻'}${Math.abs(i)} K`
+      label: `10${superscript} K`,
+      inNoFusionZone: false
     });
   }
 
@@ -512,6 +540,27 @@ export default function StellarMassApp() {
                 fill="#ef4444"
                 opacity={0.15}
               />
+
+              {/* Zone boundary - marks transition from compressed to expanded scale */}
+              <line
+                x1={0}
+                x2={chartWidth}
+                y1={chartInnerHeight - noFusionZoneHeight}
+                y2={chartInnerHeight - noFusionZoneHeight}
+                stroke="#e9e9ea"
+                strokeWidth={2}
+                opacity={0.5}
+              />
+              <text
+                x={chartWidth - 5}
+                y={chartInnerHeight - noFusionZoneHeight / 2}
+                textAnchor="end"
+                fill="#8a8a9c"
+                fontSize="11"
+                opacity={0.7}
+              >
+                No Fusion Zone (compressed scale)
+              </text>
 
               {/* Horizontal threshold lines */}
               <line
@@ -710,13 +759,15 @@ export default function StellarMassApp() {
                     y2={tick.y}
                     stroke="#e9e9ea"
                     strokeWidth={2}
+                    opacity={tick.inNoFusionZone ? 0.4 : 1}
                   />
                   <text
                     x={-10}
                     y={tick.y + 4}
                     textAnchor="end"
                     fill="#a1a1a8"
-                    fontSize="11"
+                    fontSize={tick.inNoFusionZone ? "9" : "11"}
+                    opacity={tick.inNoFusionZone ? 0.6 : 1}
                   >
                     {tick.label}
                   </text>
