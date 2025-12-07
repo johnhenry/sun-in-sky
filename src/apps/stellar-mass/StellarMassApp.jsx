@@ -402,8 +402,8 @@ export default function StellarMassApp() {
   };
 
   // Chart dimensions
-  const chartHeight = 300;
-  const chartPadding = { top: 30, right: 60, bottom: 50, left: 80 };
+  const chartHeight = 220;
+  const chartPadding = { top: 20, right: 60, bottom: 40, left: 80 };
   const chartWidth = containerWidth - chartPadding.left - chartPadding.right;
   const chartInnerHeight = chartHeight - chartPadding.top - chartPadding.bottom;
 
@@ -412,8 +412,9 @@ export default function StellarMassApp() {
   const maxLogMass = 2;
   const logMassRange = maxLogMass - minLogMass;
 
-  // Log scale for Y-axis (10^4 to 10^9 K) - Temperature
-  const minLogTemp = 4;
+  // Log scale for Y-axis (10^5 to 10^9 K) - Temperature
+  // Start at 10^5 instead of 10^4 to better show the fusion region
+  const minLogTemp = 5;
   const maxLogTemp = 9;
   const logTempRange = maxLogTemp - minLogTemp;
 
@@ -515,6 +516,40 @@ export default function StellarMassApp() {
             style={{ backgroundColor: '#252528', borderRadius: '8px' }}
           >
             <g transform={`translate(${chartPadding.left}, ${chartPadding.top})`}>
+              {/* Background regions between fusion thresholds */}
+              {(() => {
+                const thresholds = [
+                  { name: 'No Fusion', temp: 0, color: '#a1a1a8' },
+                  { name: 'Deuterium', temp: FUSION_TEMP_THRESHOLDS.DEUTERIUM, color: '#fb923c' },
+                  { name: 'Hydrogen', temp: FUSION_TEMP_THRESHOLDS.HYDROGEN_PP, color: '#f4d03f' },
+                  { name: 'Carbon', temp: FUSION_TEMP_THRESHOLDS.CARBON, color: '#ef4444' }
+                ];
+
+                return thresholds.map((threshold, index) => {
+                  if (index === thresholds.length - 1) return null;
+
+                  const logT1 = Math.log10(threshold.temp || Math.pow(10, minLogTemp));
+                  const logT2 = index < thresholds.length - 1
+                    ? Math.log10(thresholds[index + 1].temp)
+                    : maxLogTemp;
+
+                  const y1 = tempToY(logT2); // Inverted because higher temp is at top
+                  const y2 = tempToY(logT1);
+
+                  return (
+                    <rect
+                      key={`region-${index}`}
+                      x={0}
+                      y={y1}
+                      width={chartWidth}
+                      height={y2 - y1}
+                      fill={threshold.color}
+                      opacity={0.08}
+                    />
+                  );
+                });
+              })()}
+
               {/* Grid lines for temperature */}
               {yTicks.map((tick, index) => (
                 <line
