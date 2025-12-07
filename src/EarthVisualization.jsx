@@ -63,7 +63,8 @@ function Earth({
   axialTilt,
   dayOfYear,
   hourOfDay,
-  sunPosition
+  sunPosition,
+  referenceFrame
 }) {
   const earthGroupRef = useRef();
   const earthRef = useRef();
@@ -73,9 +74,11 @@ function Earth({
 
   // Calculate Earth's rotation based on hour of day
   // Earth rotates 360° in 24 hours, or 15° per hour
+  // Only rotate in sun-fixed mode; in earth-fixed mode, Earth stays still
   const earthRotation = useMemo(() => {
+    if (referenceFrame === 'earth-fixed') return 0;
     return (hourOfDay / 24) * Math.PI * 2;
-  }, [hourOfDay]);
+  }, [hourOfDay, referenceFrame]);
 
   // Calculate observer position on Earth surface (before rotation)
   const observerPosition = useMemo(() => {
@@ -250,7 +253,8 @@ function Scene({
   dayOfYear,
   hourOfDay,
   currentAzimuth,
-  currentAltitude
+  currentAltitude,
+  referenceFrame
 }) {
   // Calculate sun position in 3D space
   // This matches the calculation in App.jsx for consistency
@@ -263,8 +267,17 @@ function Scene({
     const declinationRad = (declination * Math.PI) / 180;
 
     // Hour angle (0° at solar noon, 15° per hour)
+    // In sun-fixed mode: sun position is static based on time of day
+    // In earth-fixed mode: sun needs to orbit around Earth
     // Subtract 90° to align with Three.js coordinate system where observer at long=0 starts on +X axis
-    const hourAngle = (hourOfDay - 12) * 15 - 90;
+    let hourAngle = (hourOfDay - 12) * 15 - 90;
+
+    // In earth-fixed mode, the sun orbits around Earth (geocentric view)
+    // We negate the hour angle to make it orbit the opposite direction
+    if (referenceFrame === 'earth-fixed') {
+      hourAngle = -hourAngle;
+    }
+
     const hourAngleRad = (hourAngle * Math.PI) / 180;
 
     // Convert to Cartesian coordinates
@@ -275,7 +288,7 @@ function Scene({
     const z = sunDistance * Math.cos(declinationRad) * Math.cos(hourAngleRad);
 
     return [x, y, z];
-  }, [axialTilt, dayOfYear, hourOfDay]);
+  }, [axialTilt, dayOfYear, hourOfDay, referenceFrame]);
 
   return (
     <>
@@ -304,6 +317,7 @@ function Scene({
         dayOfYear={dayOfYear}
         hourOfDay={hourOfDay}
         sunPosition={sunPosition}
+        referenceFrame={referenceFrame}
       />
 
       {/* Sun */}
@@ -336,7 +350,8 @@ function EarthVisualization({
   dayOfYear = 172,
   hourOfDay = 12,
   currentAzimuth = 0,
-  currentAltitude = 0
+  currentAltitude = 0,
+  referenceFrame = 'sun-fixed'
 }) {
   return (
     <Canvas
@@ -352,6 +367,7 @@ function EarthVisualization({
         hourOfDay={hourOfDay}
         currentAzimuth={currentAzimuth}
         currentAltitude={currentAltitude}
+        referenceFrame={referenceFrame}
       />
     </Canvas>
   );

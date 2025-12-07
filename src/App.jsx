@@ -1,5 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import EarthVisualization from './EarthVisualization.jsx';
+import LearnPanel from './components/panels/LearnPanel/LearnPanel.jsx';
+import ChallengePanel from './components/panels/ChallengePanel/ChallengePanel.jsx';
+import { initializeStorage } from './utils/localStorage.js';
 
 const SunPositionViz = () => {
   const [latitude, setLatitude] = useState(45);
@@ -11,12 +14,22 @@ const SunPositionViz = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipData, setTooltipData] = useState({ x: 0, y: 0, altitude: 0, hour: 0, day: 0 });
+  const [referenceFrame, setReferenceFrame] = useState('sun-fixed'); // 'sun-fixed' or 'earth-fixed'
+
+  // Panel states
+  const [learnPanelOpen, setLearnPanelOpen] = useState(false);
+  const [challengePanelOpen, setChallengePanelOpen] = useState(false);
 
   const containerRef = useRef(null);
   const playRef = useRef(null);
   const svgRef = useRef(null);
   const compassRotationRef = useRef(0); // Track cumulative rotation for smooth compass animation
-  
+
+  // Initialize localStorage on mount
+  useEffect(() => {
+    initializeStorage();
+  }, []);
+
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -42,7 +55,7 @@ const SunPositionViz = () => {
   
   const width = containerWidth;
   const height = 280;
-  const padding = { top: 25, right: 15, bottom: 45, left: 45 };
+  const padding = { top: 25, right: 50, bottom: 45, left: 45 };
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
   
@@ -1280,13 +1293,65 @@ const SunPositionViz = () => {
           hourOfDay={hourOfDay}
           currentAzimuth={currentAzimuth}
           currentAltitude={currentAltitude}
+          referenceFrame={referenceFrame}
         />
       </div>
 
-      {/* 3D View Legend */}
-      <div style={{ fontSize: '11px', color: '#a1a1a8', marginTop: '8px', textAlign: 'center' }}>
-        3D View: Purple marker shows your location. Sun illumination corresponds to altitude graph above. Drag to rotate, scroll to zoom.
+      {/* 3D View Controls and Legend */}
+      <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ fontSize: '11px', color: '#a1a1a8' }}>
+          3D View: Purple marker shows your location. Drag to rotate, scroll to zoom.
+        </div>
+
+        <div style={{ display: 'flex', gap: '2px', backgroundColor: '#27272a', padding: '2px', borderRadius: '5px' }} role="group" aria-label="Reference frame">
+          {['sun-fixed', 'earth-fixed'].map(mode => (
+            <button
+              key={mode}
+              onClick={() => setReferenceFrame(mode)}
+              aria-pressed={referenceFrame === mode}
+              aria-label={mode === 'sun-fixed' ? 'Sun fixed, Earth rotates (heliocentric)' : 'Earth fixed, Sun moves (geocentric)'}
+              title={mode === 'sun-fixed' ? 'Sun stays still, Earth rotates (what actually happens)' : 'Earth stays still, Sun moves (what we observe)'}
+              onMouseOver={(e) => {
+                if (referenceFrame !== mode) e.target.style.backgroundColor = 'rgba(244, 208, 63, 0.2)';
+              }}
+              onMouseOut={(e) => {
+                if (referenceFrame !== mode) e.target.style.backgroundColor = 'transparent';
+              }}
+              style={{
+                padding: '3px 8px',
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '10px',
+                backgroundColor: referenceFrame === mode ? '#f4d03f' : 'transparent',
+                color: referenceFrame === mode ? '#1a1a1c' : '#a1a1a8',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {mode === 'sun-fixed' ? '☀️ Fixed' : '🌍 Fixed'}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Learn Panel (Left Side) */}
+      <LearnPanel
+        isOpen={learnPanelOpen}
+        onToggle={() => setLearnPanelOpen(!learnPanelOpen)}
+        onAppControl={(settings) => {
+          // Handle app control from lessons
+          if (settings.latitude !== undefined) setLatitude(settings.latitude);
+          if (settings.viewMode) setViewMode(settings.viewMode);
+          if (settings.axialTilt !== undefined) setAxialTilt(settings.axialTilt);
+          // Add more controls as needed
+        }}
+      />
+
+      {/* Challenge Panel (Right Side) */}
+      <ChallengePanel
+        isOpen={challengePanelOpen}
+        onToggle={() => setChallengePanelOpen(!challengePanelOpen)}
+      />
     </div>
   );
 };

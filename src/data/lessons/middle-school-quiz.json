@@ -1,4 +1,120 @@
 {
   "gradeLevel": "middle-school",
-  "questions": []
+  "questions": [
+    {
+      "id": "q-middle-1",
+      "type": "multiple-choice",
+      "question": "Midnight sun occurs when the sun's minimum altitude is _____ the horizon.",
+      "options": [
+        { "id": "A", "text": "above", "correct": true },
+        { "id": "B", "text": "below", "correct": false },
+        { "id": "C", "text": "at", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-middle-2",
+      "type": "multiple-choice",
+      "question": "Where is the Arctic Circle located?",
+      "options": [
+        { "id": "A", "text": "23.45° north", "correct": false },
+        { "id": "B", "text": "45° north", "correct": false },
+        { "id": "C", "text": "66.55° north", "correct": true },
+        { "id": "D", "text": "90° north", "correct": false }
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "q-middle-3",
+      "type": "multiple-choice",
+      "question": "Polar night in the Northern Hemisphere occurs during which solstice?",
+      "options": [
+        { "id": "A", "text": "Summer solstice (June)", "correct": false },
+        { "id": "B", "text": "Winter solstice (December)", "correct": true }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-4",
+      "type": "multiple-choice",
+      "question": "Can midnight sun occur at the equator?",
+      "options": [
+        { "id": "A", "text": "True", "correct": false },
+        { "id": "B", "text": "False", "correct": true }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-5",
+      "type": "multiple-choice",
+      "question": "At the North Pole on June 21, how many hours of daylight are there?",
+      "options": [
+        { "id": "A", "text": "0 hours", "correct": false },
+        { "id": "B", "text": "12 hours", "correct": false },
+        { "id": "C", "text": "18 hours", "correct": false },
+        { "id": "D", "text": "24 hours", "correct": true }
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "q-middle-6",
+      "type": "multiple-choice",
+      "question": "On the equinox at 45°N, what is the maximum solar altitude at noon?",
+      "options": [
+        { "id": "A", "text": "23.45°", "correct": false },
+        { "id": "B", "text": "45°", "correct": true },
+        { "id": "C", "text": "66.55°", "correct": false },
+        { "id": "D", "text": "90°", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-7",
+      "type": "multiple-choice",
+      "question": "What determines where the Arctic Circle is located?",
+      "options": [
+        { "id": "A", "text": "Earth's orbital distance", "correct": false },
+        { "id": "B", "text": "90° minus Earth's axial tilt", "correct": true },
+        { "id": "C", "text": "The equator's position", "correct": false },
+        { "id": "D", "text": "Random geographic boundary", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-8",
+      "type": "multiple-choice",
+      "question": "Why is it hot at the equator even though the sun isn't always directly overhead?",
+      "options": [
+        { "id": "A", "text": "The equator is closer to the sun", "correct": false },
+        { "id": "B", "text": "There are more daylight hours", "correct": false },
+        { "id": "C", "text": "The sun stays at a high angle year-round", "correct": true },
+        { "id": "D", "text": "The atmosphere is thinner", "correct": false }
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "q-middle-9",
+      "type": "multiple-choice",
+      "question": "When sunlight hits Earth at a 90° angle, what happens to the energy?",
+      "options": [
+        { "id": "A", "text": "It spreads over a large area", "correct": false },
+        { "id": "B", "text": "It concentrates in a small area", "correct": true },
+        { "id": "C", "text": "It bounces back to space", "correct": false },
+        { "id": "D", "text": "It has no effect", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-middle-10",
+      "type": "multiple-choice",
+      "question": "At what latitudes do the Tropics of Cancer and Capricorn occur?",
+      "options": [
+        { "id": "A", "text": "0° north and south", "correct": false },
+        { "id": "B", "text": "23.45° north and south", "correct": true },
+        { "id": "C", "text": "45° north and south", "correct": false },
+        { "id": "D", "text": "66.55° north and south", "correct": false }
+      ],
+      "correctAnswer": "B"
+    }
+  ]
 }

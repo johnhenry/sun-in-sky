@@ -2,30 +2,90 @@
   "gradeLevel": "elementary",
   "questions": [
     {
-      "id": "q-elementary-1",
+      "id": "q-elem-1",
       "type": "multiple-choice",
       "question": "Why do we have seasons?",
       "options": [
-        {
-          "id": "A",
-          "text": "Earth gets closer and farther from the sun",
-          "correct": false
-        },
-        {
-          "id": "B",
-          "text": "Earth's tilt changes how high the sun gets in the sky",
-          "correct": true
-        },
-        {
-          "id": "C",
-          "text": "The sun gets hotter and colder",
-          "correct": false
-        },
-        {
-          "id": "D",
-          "text": "Clouds block the sun in winter",
-          "correct": false
-        }
+        { "id": "A", "text": "Earth gets closer and farther from the sun", "correct": false },
+        { "id": "B", "text": "Earth's tilt changes how high the sun gets in the sky", "correct": true },
+        { "id": "C", "text": "The sun gets hotter and colder", "correct": false },
+        { "id": "D", "text": "Clouds block the sun in winter", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-elem-2",
+      "type": "multiple-choice",
+      "question": "At the equator, do daylight hours change a lot throughout the year?",
+      "options": [
+        { "id": "A", "text": "Yes, they change dramatically", "correct": false },
+        { "id": "B", "text": "No, they stay about the same all year", "correct": true }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-elem-3",
+      "type": "multiple-choice",
+      "question": "At the North Pole in summer, can the sun be visible for 24 hours?",
+      "options": [
+        { "id": "A", "text": "Yes", "correct": true },
+        { "id": "B", "text": "No", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-elem-4",
+      "type": "multiple-choice",
+      "question": "When the sun is high in the sky at noon, is that day or night?",
+      "options": [
+        { "id": "A", "text": "Day (daytime)", "correct": true },
+        { "id": "B", "text": "Night (nighttime)", "correct": false },
+        { "id": "C", "text": "It could be either", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-elem-5",
+      "type": "multiple-choice",
+      "question": "What does solar altitude mean?",
+      "options": [
+        { "id": "A", "text": "How high the sun is above the ground", "correct": false },
+        { "id": "B", "text": "How hot the sun is", "correct": false },
+        { "id": "C", "text": "The angle of the sun above the horizon", "correct": true },
+        { "id": "D", "text": "How far away the sun is", "correct": false }
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "q-elem-6",
+      "type": "multiple-choice",
+      "question": "In summer, is the sun higher or lower in the sky at noon compared to winter?",
+      "options": [
+        { "id": "A", "text": "Higher in summer", "correct": true },
+        { "id": "B", "text": "Lower in summer", "correct": false },
+        { "id": "C", "text": "The same height all year", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-elem-7",
+      "type": "multiple-choice",
+      "question": "Do people living at different latitudes see the same sun patterns?",
+      "options": [
+        { "id": "A", "text": "Yes, everyone sees the same patterns", "correct": false },
+        { "id": "B", "text": "No, different latitudes have different patterns", "correct": true }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-elem-8",
+      "type": "multiple-choice",
+      "question": "What is Earth's axial tilt?",
+      "options": [
+        { "id": "A", "text": "0 degrees", "correct": false },
+        { "id": "B", "text": "23.4 degrees", "correct": true },
+        { "id": "C", "text": "45 degrees", "correct": false },
+        { "id": "D", "text": "90 degrees", "correct": false }
       ],
       "correctAnswer": "B"
     }

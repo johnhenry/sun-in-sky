@@ -1,4 +1,149 @@
 {
   "gradeLevel": "high-school",
-  "questions": []
+  "questions": [
+    {
+      "id": "q-high-1",
+      "type": "multiple-choice",
+      "question": "What is axial tilt (obliquity)?",
+      "options": [
+        { "id": "A", "text": "The angle between a planet's axis and its orbital plane", "correct": true },
+        { "id": "B", "text": "The angle of the sun at noon", "correct": false },
+        { "id": "C", "text": "The tilt of the ecliptic plane", "correct": false },
+        { "id": "D", "text": "The angle between magnetic and geographic poles", "correct": false }
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "q-high-2",
+      "type": "multiple-choice",
+      "question": "If a planet has an axial tilt of 40°, where would its Arctic Circle be located?",
+      "options": [
+        { "id": "A", "text": "40° north", "correct": false },
+        { "id": "B", "text": "50° north", "correct": true },
+        { "id": "C", "text": "80° north", "correct": false },
+        { "id": "D", "text": "90° north", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-3",
+      "type": "multiple-choice",
+      "question": "Mars has an axial tilt of 25.2°. How does this compare to Earth's seasons?",
+      "options": [
+        { "id": "A", "text": "Mars has no seasons", "correct": false },
+        { "id": "B", "text": "Mars has similar seasons to Earth", "correct": true },
+        { "id": "C", "text": "Mars has more extreme seasons", "correct": false },
+        { "id": "D", "text": "Mars has opposite seasons", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-4",
+      "type": "multiple-choice",
+      "question": "Uranus has an axial tilt of 82°. What is unusual about its seasons?",
+      "options": [
+        { "id": "A", "text": "It has no seasons", "correct": false },
+        { "id": "B", "text": "Its poles experience extreme seasons with decades of daylight/darkness", "correct": true },
+        { "id": "C", "text": "It has identical seasons to Earth", "correct": false },
+        { "id": "D", "text": "Seasons occur twice per year", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-5",
+      "type": "multiple-choice",
+      "question": "For a planet with 0° axial tilt, where would you expect the hottest climate zone?",
+      "options": [
+        { "id": "A", "text": "At the poles", "correct": false },
+        { "id": "B", "text": "At the equator", "correct": true },
+        { "id": "C", "text": "Evenly distributed", "correct": false },
+        { "id": "D", "text": "At mid-latitudes", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-6",
+      "type": "multiple-choice",
+      "question": "The range in maximum solar altitude throughout the year is approximately equal to:",
+      "options": [
+        { "id": "A", "text": "The axial tilt", "correct": false },
+        { "id": "B", "text": "Twice the axial tilt", "correct": true },
+        { "id": "C", "text": "90° minus the axial tilt", "correct": false },
+        { "id": "D", "text": "The latitude", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-7",
+      "type": "multiple-choice",
+      "question": "On Uranus with its extreme 82° tilt, where are the 'tropics' located?",
+      "options": [
+        { "id": "A", "text": "Near the equator at ±23°", "correct": false },
+        { "id": "B", "text": "Near the poles at ±82°", "correct": true },
+        { "id": "C", "text": "At mid-latitudes ±45°", "correct": false },
+        { "id": "D", "text": "There are no tropics", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-8",
+      "type": "multiple-choice",
+      "question": "Solar intensity is proportional to which trigonometric function of solar altitude?",
+      "options": [
+        { "id": "A", "text": "Cosine", "correct": false },
+        { "id": "B", "text": "Sine", "correct": true },
+        { "id": "C", "text": "Tangent", "correct": false },
+        { "id": "D", "text": "Secant", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-9",
+      "type": "multiple-choice",
+      "question": "Why does the North Pole stay cold despite 24 hours of daylight in summer?",
+      "options": [
+        { "id": "A", "text": "It's too far from the sun", "correct": false },
+        { "id": "B", "text": "The sun remains low on the horizon even at midnight", "correct": true },
+        { "id": "C", "text": "Ice reflects all the sunlight", "correct": false },
+        { "id": "D", "text": "There's no atmosphere", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-10",
+      "type": "multiple-choice",
+      "question": "What formula gives the maximum solar altitude on the equinox at a given latitude?",
+      "options": [
+        { "id": "A", "text": "Latitude", "correct": false },
+        { "id": "B", "text": "90° - latitude", "correct": true },
+        { "id": "C", "text": "90° + latitude", "correct": false },
+        { "id": "D", "text": "2 × latitude", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-11",
+      "type": "multiple-choice",
+      "question": "For exoplanet habitability, why is axial tilt important?",
+      "options": [
+        { "id": "A", "text": "It determines the length of the year", "correct": false },
+        { "id": "B", "text": "It affects seasonal climate stability and extremes", "correct": true },
+        { "id": "C", "text": "It changes the planet's orbital distance", "correct": false },
+        { "id": "D", "text": "It has no effect on habitability", "correct": false }
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "q-high-12",
+      "type": "multiple-choice",
+      "question": "At 30°N on the summer solstice, approximately what is the maximum solar altitude?",
+      "options": [
+        { "id": "A", "text": "60°", "correct": false },
+        { "id": "B", "text": "75°", "correct": false },
+        { "id": "C", "text": "83.5°", "correct": true },
+        { "id": "D", "text": "90°", "correct": false }
+      ],
+      "correctAnswer": "C"
+    }
+  ]
 }
