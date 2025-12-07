@@ -1195,6 +1195,15 @@ const SunPositionViz = () => {
           >
             <span style={{ fontSize: '14px' }}>📱</span>
             Find Sun
+            <span style={{
+              fontSize: '8px',
+              color: '#f4d03f',
+              fontWeight: 600,
+              marginLeft: '2px',
+              opacity: 0.7
+            }}>
+              EXPERIMENTAL
+            </span>
           </button>
         )}
       </div>

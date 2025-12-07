@@ -369,6 +369,24 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
         </div>
       )}
 
+      {/* Experimental label */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        backgroundColor: 'rgba(244, 208, 63, 0.2)',
+        padding: '6px 12px',
+        borderRadius: '20px',
+        color: '#f4d03f',
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '1px',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(244, 208, 63, 0.4)'
+      }}>
+        ⚠️ EXPERIMENTAL
+      </div>
+
       {/* Close button */}
       <button
         onClick={onClose}
