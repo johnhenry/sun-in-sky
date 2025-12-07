@@ -860,7 +860,63 @@ const SunPositionViz = () => {
           </>
         )}
 
-        {/* Night region (below horizon) */}
+        {/* Twilight gradient zones (day view only) */}
+        {viewMode === 'day' && horizonVisible && (() => {
+          const twilight6Y = altToY(-6);
+          const twilight12Y = altToY(-12);
+          const twilight18Y = altToY(-18);
+          const graphBottom = padding.top + graphHeight;
+
+          return (
+            <g clipPath="url(#graphClip)">
+              {/* Civil twilight: 0° to -6° */}
+              {yMin <= -6 && (
+                <rect
+                  x={padding.left}
+                  y={horizonY}
+                  width={graphWidth}
+                  height={Math.max(0, Math.min(twilight6Y, graphBottom) - horizonY)}
+                  fill="rgba(135, 206, 250, 0.15)"
+                />
+              )}
+
+              {/* Nautical twilight: -6° to -12° */}
+              {yMin <= -12 && (
+                <rect
+                  x={padding.left}
+                  y={Math.max(padding.top, twilight6Y)}
+                  width={graphWidth}
+                  height={Math.max(0, Math.min(twilight12Y, graphBottom) - Math.max(padding.top, twilight6Y))}
+                  fill="rgba(70, 130, 180, 0.2)"
+                />
+              )}
+
+              {/* Astronomical twilight: -12° to -18° */}
+              {yMin <= -18 && (
+                <rect
+                  x={padding.left}
+                  y={Math.max(padding.top, twilight12Y)}
+                  width={graphWidth}
+                  height={Math.max(0, Math.min(twilight18Y, graphBottom) - Math.max(padding.top, twilight12Y))}
+                  fill="rgba(25, 25, 112, 0.25)"
+                />
+              )}
+
+              {/* Night: below -18° */}
+              {yMin < -18 && (
+                <rect
+                  x={padding.left}
+                  y={Math.max(padding.top, twilight18Y)}
+                  width={graphWidth}
+                  height={Math.max(0, graphBottom - Math.max(padding.top, twilight18Y))}
+                  fill="rgba(10, 10, 30, 0.4)"
+                />
+              )}
+            </g>
+          );
+        })()}
+
+        {/* Night region fallback (year view or when horizon not visible) */}
         {(!viewMode === 'day' || !horizonVisible) && horizonVisible && (
           <rect
             x={padding.left} y={horizonY}
