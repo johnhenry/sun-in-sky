@@ -14,7 +14,8 @@ export default function Panel({
   icon,
   accentColor,
   children,
-  width = 400
+  width = 400,
+  showToggleButton = true // Allow hiding the floating edge button
 }) {
   const panelRef = useRef(null);
 
@@ -52,20 +53,22 @@ export default function Panel({
 
   return (
     <>
-      {/* Toggle Button */}
-      <button
-        className={`panel-toggle panel-toggle-${side} ${isOpen ? 'open' : ''}`}
-        onClick={onToggle}
-        aria-label={`${isOpen ? 'Close' : 'Open'} ${title}`}
-        aria-expanded={isOpen}
-        style={{ [side]: isOpen ? `${width}px` : '0' }}
-      >
-        <span className="panel-toggle-icon">{icon}</span>
-        <span className="panel-toggle-text">{title}</span>
-        <span className="panel-toggle-arrow">
-          {side === 'left' ? (isOpen ? '◀' : '▶') : (isOpen ? '▶' : '◀')}
-        </span>
-      </button>
+      {/* Toggle Button (only show if showToggleButton is true) */}
+      {showToggleButton && (
+        <button
+          className={`panel-toggle panel-toggle-${side} ${isOpen ? 'open' : ''}`}
+          onClick={onToggle}
+          aria-label={`${isOpen ? 'Close' : 'Open'} ${title}`}
+          aria-expanded={isOpen}
+          style={{ [side]: isOpen ? `${width}px` : '0' }}
+        >
+          <span className="panel-toggle-icon">{icon}</span>
+          <span className="panel-toggle-text">{title}</span>
+          <span className="panel-toggle-arrow">
+            {side === 'left' ? (isOpen ? '◀' : '▶') : (isOpen ? '▶' : '◀')}
+          </span>
+        </button>
+      )}
 
       {/* Panel Overlay (mobile only) */}
       {isOpen && (

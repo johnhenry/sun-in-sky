@@ -304,17 +304,17 @@ const SunPositionViz = () => {
     { name: 'Neptune', tilt: 28.3, dayLength: 16.1, yearLength: 60190 },
   ];
   
-  // FIX #3: Fixed latitude bookmarks with proper geographic labels
-  const latPresets = [
+  // Dynamic latitude bookmarks based on current axial tilt
+  const latPresets = useMemo(() => [
     { value: -90, label: '-90° South Pole' },
-    { value: -66.5, label: '-66.5° Antarctic Circle' },
-    { value: -23.5, label: '-23.5° Tropic of Capricorn' },
+    { value: -arcticLat, label: `${-arcticLat.toFixed(1)}° Antarctic Circle` },
+    { value: -tropicLat, label: `${-tropicLat.toFixed(1)}° Tropic of Capricorn` },
     { value: 0, label: '0° Equator' },
-    { value: 23.5, label: '23.5° Tropic of Cancer' },
+    { value: tropicLat, label: `${tropicLat.toFixed(1)}° Tropic of Cancer` },
     { value: 45, label: '45° Mid-Latitudes' },
-    { value: 66.5, label: '66.5° Arctic Circle' },
+    { value: arcticLat, label: `${arcticLat.toFixed(1)}° Arctic Circle` },
     { value: 90, label: '90° North Pole' },
-  ];
+  ], [tropicLat, arcticLat]);
   
   // Key dates scaled to current year length
   const datePresets = useMemo(() => [
@@ -455,7 +455,90 @@ const SunPositionViz = () => {
         overflow: 'hidden'
       }}
     >
-      {/* Header */}
+      {/* Main Header with Learn and Challenge buttons */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '12px',
+        padding: '12px 16px',
+        backgroundColor: '#27272a',
+        borderRadius: '8px',
+        border: '1px solid #393941',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <h1 style={{ fontSize: '20px', margin: 0, fontWeight: 600, color: '#e9e9ea' }}>
+            ☀️ Sun in Sky
+          </h1>
+          <p style={{ fontSize: '11px', margin: '4px 0 0 0', color: '#a1a1a8' }}>
+            Interactive solar position visualization
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setLearnPanelOpen(!learnPanelOpen)}
+            aria-label={`${learnPanelOpen ? 'Close' : 'Open'} Learn Panel`}
+            aria-expanded={learnPanelOpen}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 600,
+              backgroundColor: learnPanelOpen ? '#8c7ae6' : '#393941',
+              color: learnPanelOpen ? '#1a1a1c' : '#e9e9ea',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onMouseOver={(e) => {
+              if (!learnPanelOpen) e.currentTarget.style.backgroundColor = '#4a4a52';
+            }}
+            onMouseOut={(e) => {
+              if (!learnPanelOpen) e.currentTarget.style.backgroundColor = '#393941';
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>📚</span>
+            <span>Learn</span>
+          </button>
+
+          <button
+            onClick={() => setChallengePanelOpen(!challengePanelOpen)}
+            aria-label={`${challengePanelOpen ? 'Close' : 'Open'} Challenge Panel`}
+            aria-expanded={challengePanelOpen}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 600,
+              backgroundColor: challengePanelOpen ? '#6ab0f3' : '#393941',
+              color: challengePanelOpen ? '#1a1a1c' : '#e9e9ea',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onMouseOver={(e) => {
+              if (!challengePanelOpen) e.currentTarget.style.backgroundColor = '#4a4a52';
+            }}
+            onMouseOut={(e) => {
+              if (!challengePanelOpen) e.currentTarget.style.backgroundColor = '#393941';
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>🎯</span>
+            <span>Challenge</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Graph Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
         <div>
           <h2 style={{ fontSize: '16px', margin: 0, fontWeight: 600 }}>
@@ -1416,6 +1499,7 @@ const SunPositionViz = () => {
       <LearnPanel
         isOpen={learnPanelOpen}
         onToggle={() => setLearnPanelOpen(!learnPanelOpen)}
+        showToggleButton={false}
         onAppControl={(settings) => {
           // Handle app control from lessons
           if (settings.latitude !== undefined) setLatitude(settings.latitude);
@@ -1429,6 +1513,7 @@ const SunPositionViz = () => {
       <ChallengePanel
         isOpen={challengePanelOpen}
         onToggle={() => setChallengePanelOpen(!challengePanelOpen)}
+        showToggleButton={false}
       />
     </div>
   );

@@ -17,7 +17,7 @@ const ALL_QUESTIONS = [
   ...(highSchoolQuiz?.questions || [])
 ];
 
-export default function ChallengePanel({ isOpen, onToggle }) {
+export default function ChallengePanel({ isOpen, onToggle, showToggleButton = true }) {
   const [quizState, setQuizState] = useLocalStorage(STORAGE_KEYS.QUIZ_STATE, {
     totalQuestions: 0,
     correctAnswers: 0,
@@ -198,6 +198,7 @@ export default function ChallengePanel({ isOpen, onToggle }) {
       icon="🏆"
       accentColor="#e67e22"
       width={420}
+      showToggleButton={showToggleButton}
     >
       {/* New Badge Notification */}
       {newBadge && (

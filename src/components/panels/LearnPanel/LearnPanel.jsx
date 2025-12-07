@@ -17,7 +17,7 @@ const GRADE_LEVELS = {
   'high-school': { name: 'High School (Grades 9-12)', data: highSchoolData, icon: '🎯' }
 };
 
-export default function LearnPanel({ isOpen, onToggle, onAppControl }) {
+export default function LearnPanel({ isOpen, onToggle, onAppControl, showToggleButton = true }) {
   const [gradeLevel, setGradeLevel] = useState('elementary');
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [lessonProgress, setLessonProgress] = useLocalStorage(STORAGE_KEYS.LESSON_PROGRESS, {
@@ -87,6 +87,7 @@ export default function LearnPanel({ isOpen, onToggle, onAppControl }) {
       icon="📚"
       accentColor="#8c7ae6"
       width={420}
+      showToggleButton={showToggleButton}
     >
       {/* Grade Level Selector */}
       <div className="grade-selector">
