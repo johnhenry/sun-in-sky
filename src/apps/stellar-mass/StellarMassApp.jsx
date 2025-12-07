@@ -557,64 +557,6 @@ export default function StellarMassApp() {
                 No Fusion Zone (compressed scale)
               </text>
 
-              {/* Horizontal threshold lines */}
-              <line
-                x1={0}
-                x2={chartWidth}
-                y1={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM))}
-                y2={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM))}
-                stroke="#fb923c"
-                strokeWidth={2}
-                strokeDasharray="5,5"
-              />
-              <text
-                x={5}
-                y={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.DEUTERIUM)) - 5}
-                fill="#fb923c"
-                fontSize="10"
-                fontWeight="bold"
-              >
-                Deuterium Fusion
-              </text>
-
-              <line
-                x1={0}
-                x2={chartWidth}
-                y1={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP))}
-                y2={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP))}
-                stroke="#f4d03f"
-                strokeWidth={2}
-                strokeDasharray="5,5"
-              />
-              <text
-                x={5}
-                y={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.HYDROGEN_PP)) - 5}
-                fill="#f4d03f"
-                fontSize="10"
-                fontWeight="bold"
-              >
-                Hydrogen Fusion
-              </text>
-
-              <line
-                x1={0}
-                x2={chartWidth}
-                y1={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.CARBON))}
-                y2={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.CARBON))}
-                stroke="#ef4444"
-                strokeWidth={2}
-                strokeDasharray="5,5"
-              />
-              <text
-                x={5}
-                y={tempToY(Math.log10(FUSION_TEMP_THRESHOLDS.CARBON)) - 5}
-                fill="#ef4444"
-                fontSize="10"
-                fontWeight="bold"
-              >
-                Carbon Fusion
-              </text>
-
               {/* Dynamic vertical threshold lines (fusion) */}
               {dynamicThresholds.map((threshold, index) => {
                 const x = massToX(Math.log10(threshold.value));
