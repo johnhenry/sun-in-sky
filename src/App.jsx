@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import EarthVisualization from './EarthVisualization.jsx';
 import LearnPanel from './components/panels/LearnPanel/LearnPanel.jsx';
 import ChallengePanel from './components/panels/ChallengePanel/ChallengePanel.jsx';
+import ARSunFinder from './components/ARSunFinder.jsx';
 import { initializeStorage } from './utils/localStorage.js';
 import { lttb } from './utils/lttb.js';
 
@@ -26,6 +27,10 @@ const SunPositionViz = () => {
   // Geolocation state
   const [gettingLocation, setGettingLocation] = useState(false);
 
+  // AR mode state
+  const [arModeActive, setArModeActive] = useState(false);
+  const [hasOrientationSensors, setHasOrientationSensors] = useState(false);
+
   const containerRef = useRef(null);
   const playRef = useRef(null);
   const svgRef = useRef(null);
@@ -45,6 +50,13 @@ const SunPositionViz = () => {
     updateWidth();
     window.addEventListener('resize', updateWidth);
     return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Detect if device has orientation sensors (for AR mode)
+  useEffect(() => {
+    const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hasOrientationAPI = typeof DeviceOrientationEvent !== 'undefined';
+    setHasOrientationSensors(hasTouchScreen && hasOrientationAPI);
   }, []);
 
   const width = containerWidth;
@@ -1150,6 +1162,41 @@ const SunPositionViz = () => {
             {currentAltitude.toFixed(1)}° elevation
           </span>
         </div>
+
+        {/* AR Sun Finder button (mobile only) */}
+        {hasOrientationSensors && (
+          <button
+            onClick={() => setArModeActive(true)}
+            aria-label="AR Sun Finder"
+            title="Point your device at the sun using AR"
+            style={{
+              marginLeft: 'auto',
+              padding: '6px 12px',
+              borderRadius: '5px',
+              border: '1px solid #393941',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 500,
+              backgroundColor: 'transparent',
+              color: '#e9e9ea',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = '#f4d03f';
+              e.currentTarget.style.color = '#f4d03f';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = '#393941';
+              e.currentTarget.style.color = '#e9e9ea';
+            }}
+          >
+            <span style={{ fontSize: '14px' }}>📱</span>
+            Find Sun
+          </button>
+        )}
       </div>
 
       {/* Time presets row */}
@@ -1717,6 +1764,15 @@ const SunPositionViz = () => {
         onToggle={() => setChallengePanelOpen(!challengePanelOpen)}
         showToggleButton={false}
       />
+
+      {/* AR Sun Finder (Full-screen overlay on mobile) */}
+      {arModeActive && (
+        <ARSunFinder
+          sunAzimuth={currentAzimuth}
+          sunAltitude={currentAltitude}
+          onClose={() => setArModeActive(false)}
+        />
+      )}
     </div>
   );
 };
