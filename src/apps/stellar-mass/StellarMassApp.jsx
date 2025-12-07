@@ -267,7 +267,8 @@ function estimateLifetime(mass, luminosity) {
 export default function StellarMassApp() {
   // Core state
   const [logMass, setLogMass] = useState(0); // log10(1.0) = 0 (Sun)
-  const [radius, setRadius] = useState(null); // Will be set to realistic default
+  const [logRadius, setLogRadius] = useState(null); // log10(radius in km)
+  const radius = logRadius !== null ? Math.pow(10, logRadius) : null;
   const [containerWidth, setContainerWidth] = useState(800);
 
   // Panel states
@@ -297,8 +298,9 @@ export default function StellarMassApp() {
 
   // Set realistic radius if not set or out of range
   useEffect(() => {
-    if (radius === null || radius < radiusRange.min || radius > radiusRange.max) {
-      setRadius(radiusRange.realistic);
+    const currentRadius = radius;
+    if (currentRadius === null || currentRadius < radiusRange.min || currentRadius > radiusRange.max) {
+      setLogRadius(Math.log10(radiusRange.realistic));
     }
   }, [radiusRange, radius]);
 
@@ -943,7 +945,12 @@ export default function StellarMassApp() {
             fontWeight: 'bold',
             opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.5
           }}>
-            Radius: {radius !== null ? formatRadius(radius) : 'N/A'}
+            Radius (Logarithmic Scale): {radius !== null ? formatRadius(radius) : 'N/A'}
+            {mass >= HYDROSTATIC_EQUILIBRIUM_MASS && radius && (
+              <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: '#4ade80', marginLeft: '10px' }}>
+                ({(radius / radiusRange.realistic).toFixed(1)}× {radius < radiusRange.realistic ? 'compressed' : 'expanded'})
+              </span>
+            )}
             {mass < HYDROSTATIC_EQUILIBRIUM_MASS && (
               <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: '#a1a1a8', marginLeft: '10px' }}>
                 (requires hydrostatic equilibrium)
@@ -952,11 +959,11 @@ export default function StellarMassApp() {
           </label>
           <input
             type="range"
-            min={radiusRange.min}
-            max={radiusRange.max}
-            step={(radiusRange.max - radiusRange.min) / 100}
-            value={radius || radiusRange.realistic}
-            onChange={(e) => setRadius(parseFloat(e.target.value))}
+            min={Math.log10(radiusRange.min)}
+            max={Math.log10(radiusRange.max)}
+            step={0.01}
+            value={logRadius !== null ? logRadius : Math.log10(radiusRange.realistic)}
+            onChange={(e) => setLogRadius(parseFloat(e.target.value))}
             disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
             style={{
               width: '100%',
@@ -969,11 +976,23 @@ export default function StellarMassApp() {
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '5px',
+            fontSize: '0.75rem',
+            color: '#a1a1a8'
+          }}>
+            <span>{(radiusRange.min / 1000).toFixed(0)}k km</span>
+            <span>←  Compress  |  Expand  →</span>
+            <span>{(radiusRange.max / 1000).toFixed(0)}k km</span>
+          </div>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
             marginTop: '10px',
             gap: '10px'
           }}>
             <button
-              onClick={() => setRadius(radiusRange.min)}
+              onClick={() => setLogRadius(Math.log10(radiusRange.min))}
               disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
               style={{
                 padding: '8px 12px',
@@ -986,10 +1005,10 @@ export default function StellarMassApp() {
                 opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
             >
-              Min
+              Max Compress
             </button>
             <button
-              onClick={() => setRadius(radiusRange.realistic)}
+              onClick={() => setLogRadius(Math.log10(radiusRange.realistic))}
               disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
               style={{
                 padding: '8px 12px',
@@ -1002,10 +1021,10 @@ export default function StellarMassApp() {
                 opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
             >
-              Realistic
+              Realistic (1×)
             </button>
             <button
-              onClick={() => setRadius(radiusRange.max)}
+              onClick={() => setLogRadius(Math.log10(radiusRange.max))}
               disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
               style={{
                 padding: '8px 12px',
@@ -1018,7 +1037,7 @@ export default function StellarMassApp() {
                 opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
             >
-              Max
+              Max Expand
             </button>
           </div>
         </div>
