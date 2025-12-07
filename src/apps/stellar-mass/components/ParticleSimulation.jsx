@@ -1,13 +1,8 @@
 /**
  * ParticleSimulation.jsx
  *
- * Three.js-based particle simulation showing gravitational collapse and fusion
- * Particle behavior changes based on mass thresholds:
- * - Below 0.001 M☉: Diffuse cloud (no hydrostatic equilibrium)
- * - 0.001+ M☉: Gravitational collapse into sphere
- * - 0.013+ M☉: Deuterium fusion (faint amber glow)
- * - 0.08+ M☉: Hydrogen fusion (bright yellow-white glow)
- * - 8+ M☉: Massive star (intense white-blue glow)
+ * Simplified particle simulation using ~100 cube meshes
+ * Shows gravitational collapse and fusion effects
  */
 
 import React, { useRef, useMemo, useEffect } from 'react';
@@ -15,30 +10,41 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
+const PARTICLE_COUNT = 100;
+const CUBE_SIZE = 0.05;
+
 /**
- * Particle system component with physics-based behavior
+ * Generate evenly distributed points on a sphere using Fibonacci sphere algorithm
  */
-function ParticleCloud({ mass, radius, objectType }) {
-  const particlesRef = useRef();
-  const initialPositions = useRef(null);
-  const targetPositions = useRef(null);
-  const velocities = useRef(null);
+function fibonacciSphere(count, radius) {
+  const points = [];
+  const phi = Math.PI * (3 - Math.sqrt(5)); // golden angle
+
+  for (let i = 0; i < count; i++) {
+    const y = 1 - (i / (count - 1)) * 2; // y from 1 to -1
+    const radiusAtY = Math.sqrt(1 - y * y);
+    const theta = phi * i;
+
+    const x = Math.cos(theta) * radiusAtY * radius;
+    const yPos = y * radius;
+    const z = Math.sin(theta) * radiusAtY * radius;
+
+    points.push({ x, y: yPos, z });
+  }
+
+  return points;
+}
+
+/**
+ * Cube particles with physics-based behavior
+ */
+function CubeParticles({ mass, radius }) {
+  const meshRef = useRef();
+  const initialPositions = useRef([]);
+  const targetPositions = useRef([]);
+  const velocities = useRef([]);
   const collapseProgress = useRef(0);
-
-  // Determine particle count based on mass
-  const particleCount = useMemo(() => {
-    if (mass < 0.001) return 5000;
-    if (mass < 0.013) return 3000;
-    if (mass < 0.08) return 2500;
-    if (mass < 8) return 2000;
-    return 1500;
-  }, [mass]);
-
-  // Calculate visual size (in Three.js units)
-  const visualRadius = useMemo(() => {
-    const logMass = Math.log10(mass);
-    return 0.5 + (logMass + 10) / 12 * 2.5;
-  }, [mass]);
+  const collapseStartTime = useRef(null);
 
   // Determine if object has hydrostatic equilibrium
   const hasHydrostaticEquilibrium = mass >= 0.001;
@@ -51,209 +57,188 @@ function ParticleCloud({ mass, radius, objectType }) {
     return 'massive';
   }, [mass]);
 
-  // Get particle color based on fusion state
-  const getParticleColor = useMemo(() => {
+  // Get cube color based on fusion state
+  const cubeColor = useMemo(() => {
     switch (fusionState) {
       case 'none':
-        return new THREE.Color('#60a5fa'); // Blue
+        return new THREE.Color('#3a3a4c'); // Dark gray-blue
       case 'deuterium':
         return new THREE.Color('#fb923c'); // Amber
       case 'hydrogen':
-        return new THREE.Color('#f4d03f'); // Yellow-white
+        return new THREE.Color('#f4d03f'); // Yellow
       case 'massive':
-        return new THREE.Color('#60a5fa'); // White-blue
+        return new THREE.Color('#60a5fa'); // Blue-white
       default:
-        return new THREE.Color('#a1a1a8'); // Gray
+        return new THREE.Color('#3a3a4c');
     }
   }, [fusionState]);
 
-  // Initialize particle positions
-  useEffect(() => {
-    const positions = new Float32Array(particleCount * 3);
-    const targets = new Float32Array(particleCount * 3);
-    const vels = new Float32Array(particleCount * 3);
+  // Calculate emissive intensity
+  const emissiveIntensity = useMemo(() => {
+    switch (fusionState) {
+      case 'deuterium':
+        return 0.5;
+      case 'hydrogen':
+        return 1.5;
+      case 'massive':
+        return 3.0;
+      default:
+        return 0;
+    }
+  }, [fusionState]);
 
-    // Initial diffuse cloud
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
+  // Calculate visual radius for sphere
+  const visualRadius = useMemo(() => {
+    // Scale radius logarithmically for better visualization
+    return Math.max(1, Math.log10(mass + 1) * 2);
+  }, [mass]);
+
+  // Initialize positions when component mounts or particle count changes
+  useEffect(() => {
+    // Random initial positions (diffuse cloud)
+    const initial = [];
+    const vels = [];
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      const r = 5 + Math.random() * 10; // Large diffuse cloud
+      const r = 3 + Math.random() * 4; // Diffuse cloud radius 3-7 units
 
-      positions[i3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i3 + 2] = r * Math.cos(phi);
+      initial.push({
+        x: r * Math.sin(phi) * Math.cos(theta),
+        y: r * Math.sin(phi) * Math.sin(theta),
+        z: r * Math.cos(phi)
+      });
 
-      // Random velocities for Brownian motion
-      vels[i3] = (Math.random() - 0.5) * 0.02;
-      vels[i3 + 1] = (Math.random() - 0.5) * 0.02;
-      vels[i3 + 2] = (Math.random() - 0.5) * 0.02;
+      vels.push({
+        x: (Math.random() - 0.5) * 0.02,
+        y: (Math.random() - 0.5) * 0.02,
+        z: (Math.random() - 0.5) * 0.02
+      });
     }
 
     // Target positions (collapsed sphere)
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const r = visualRadius * (0.8 + Math.random() * 0.4); // Some variation
+    const targets = fibonacciSphere(PARTICLE_COUNT, visualRadius);
 
-      targets[i3] = r * Math.sin(phi) * Math.cos(theta);
-      targets[i3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      targets[i3 + 2] = r * Math.cos(phi);
-    }
-
-    initialPositions.current = positions;
+    initialPositions.current = initial;
     targetPositions.current = targets;
     velocities.current = vels;
 
-    if (particlesRef.current) {
-      particlesRef.current.geometry.attributes.position.array = positions;
-      particlesRef.current.geometry.attributes.position.needsUpdate = true;
+    // Reset collapse animation
+    if (hasHydrostaticEquilibrium && collapseStartTime.current === null) {
+      collapseStartTime.current = Date.now();
+      collapseProgress.current = 0;
+    } else if (!hasHydrostaticEquilibrium) {
+      collapseStartTime.current = null;
+      collapseProgress.current = 0;
     }
-
-    // Reset collapse progress when mass changes significantly
-    collapseProgress.current = hasHydrostaticEquilibrium ? 1 : 0;
-  }, [particleCount, visualRadius, hasHydrostaticEquilibrium]);
+  }, [hasHydrostaticEquilibrium, visualRadius]);
 
   // Animation loop
-  useFrame((state, delta) => {
-    if (!particlesRef.current) return;
+  useFrame((state) => {
+    if (!meshRef.current) return;
 
-    const positions = particlesRef.current.geometry.attributes.position.array;
+    const dummy = new THREE.Object3D();
+    const time = state.clock.elapsedTime;
 
     if (hasHydrostaticEquilibrium) {
-      // Collapse animation
+      // Collapse animation (2 seconds)
       if (collapseProgress.current < 1) {
-        collapseProgress.current = Math.min(1, collapseProgress.current + delta * 0.5);
+        const elapsed = (Date.now() - collapseStartTime.current) / 1000;
+        collapseProgress.current = Math.min(1, elapsed / 2.0);
       }
 
-      // Interpolate between initial and target positions
-      for (let i = 0; i < particleCount * 3; i++) {
-        positions[i] = THREE.MathUtils.lerp(
-          initialPositions.current[i],
-          targetPositions.current[i],
-          collapseProgress.current
-        );
-      }
-
-      // Add pulsing effect for fusion
+      // Pulsing effect for fusion
+      let pulseScale = 1;
       if (fusionState !== 'none') {
-        const pulseIntensity = fusionState === 'massive' ? 0.15 : 0.08;
-        const pulseSpeed = fusionState === 'massive' ? 3 : 2;
-        const pulse = Math.sin(state.clock.elapsedTime * pulseSpeed) * pulseIntensity + 1;
-
-        for (let i = 0; i < particleCount; i++) {
-          const i3 = i * 3;
-          const dx = positions[i3] - 0;
-          const dy = positions[i3 + 1] - 0;
-          const dz = positions[i3 + 2] - 0;
-          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-          if (dist > 0) {
-            positions[i3] = dx * pulse;
-            positions[i3 + 1] = dy * pulse;
-            positions[i3 + 2] = dz * pulse;
-          }
-        }
+        const pulseSpeed = fusionState === 'massive' ? 3 : fusionState === 'hydrogen' ? 2 : 1.5;
+        const pulseAmount = fusionState === 'massive' ? 0.1 : fusionState === 'hydrogen' ? 0.08 : 0.05;
+        pulseScale = 1 + Math.sin(time * pulseSpeed) * pulseAmount;
       }
+
+      // Update each cube's position
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const initial = initialPositions.current[i];
+        const target = targetPositions.current[i];
+
+        // Smooth interpolation with easing
+        const t = collapseProgress.current;
+        const easedT = t * t * (3 - 2 * t); // Smoothstep easing
+
+        const x = THREE.MathUtils.lerp(initial.x, target.x, easedT) * pulseScale;
+        const y = THREE.MathUtils.lerp(initial.y, target.y, easedT) * pulseScale;
+        const z = THREE.MathUtils.lerp(initial.z, target.z, easedT) * pulseScale;
+
+        dummy.position.set(x, y, z);
+
+        // Random rotation for visual interest
+        dummy.rotation.x = time * 0.5 + i;
+        dummy.rotation.y = time * 0.7 + i * 0.5;
+
+        dummy.updateMatrix();
+        meshRef.current.setMatrixAt(i, dummy.matrix);
+      }
+
     } else {
       // Brownian motion for diffuse cloud
-      for (let i = 0; i < particleCount; i++) {
-        const i3 = i * 3;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const pos = initialPositions.current[i];
+        const vel = velocities.current[i];
 
-        // Update velocities with random walk
-        velocities.current[i3] += (Math.random() - 0.5) * 0.001;
-        velocities.current[i3 + 1] += (Math.random() - 0.5) * 0.001;
-        velocities.current[i3 + 2] += (Math.random() - 0.5) * 0.001;
+        // Random walk
+        vel.x += (Math.random() - 0.5) * 0.001;
+        vel.y += (Math.random() - 0.5) * 0.001;
+        vel.z += (Math.random() - 0.5) * 0.001;
 
         // Damping
-        velocities.current[i3] *= 0.98;
-        velocities.current[i3 + 1] *= 0.98;
-        velocities.current[i3 + 2] *= 0.98;
+        vel.x *= 0.98;
+        vel.y *= 0.98;
+        vel.z *= 0.98;
 
-        // Update positions
-        positions[i3] += velocities.current[i3];
-        positions[i3 + 1] += velocities.current[i3 + 1];
-        positions[i3 + 2] += velocities.current[i3 + 2];
+        // Update position
+        pos.x += vel.x;
+        pos.y += vel.y;
+        pos.z += vel.z;
 
-        // Keep particles in a rough sphere
-        const dist = Math.sqrt(
-          positions[i3] * positions[i3] +
-          positions[i3 + 1] * positions[i3 + 1] +
-          positions[i3 + 2] * positions[i3 + 2]
-        );
-
-        if (dist > 15) {
-          const scale = 15 / dist;
-          positions[i3] *= scale;
-          positions[i3 + 1] *= scale;
-          positions[i3 + 2] *= scale;
+        // Keep particles in bounds
+        const dist = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+        if (dist > 10) {
+          const scale = 10 / dist;
+          pos.x *= scale;
+          pos.y *= scale;
+          pos.z *= scale;
         }
+
+        dummy.position.set(pos.x, pos.y, pos.z);
+        dummy.rotation.x = time * 0.3 + i;
+        dummy.rotation.y = time * 0.5 + i * 0.3;
+
+        dummy.updateMatrix();
+        meshRef.current.setMatrixAt(i, dummy.matrix);
       }
     }
 
-    particlesRef.current.geometry.attributes.position.needsUpdate = true;
+    meshRef.current.instanceMatrix.needsUpdate = true;
   });
-
-  // Custom shader material for glowing particles
-  const particleMaterial = useMemo(() => {
-    const glowIntensity = fusionState === 'massive' ? 3.0 :
-                         fusionState === 'hydrogen' ? 2.0 :
-                         fusionState === 'deuterium' ? 1.0 : 0.3;
-
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        color: { value: getParticleColor },
-        glowIntensity: { value: glowIntensity },
-        time: { value: 0 }
-      },
-      vertexShader: `
-        varying vec3 vPosition;
-        void main() {
-          vPosition = position;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = ${fusionState !== 'none' ? '4.0' : '2.0'} * (300.0 / -mvPosition.z);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 color;
-        uniform float glowIntensity;
-        varying vec3 vPosition;
-
-        void main() {
-          float distanceToCenter = length(gl_PointCoord - vec2(0.5, 0.5));
-          float alpha = smoothstep(0.5, 0.0, distanceToCenter);
-
-          vec3 finalColor = color * (1.0 + glowIntensity * alpha);
-          gl_FragColor = vec4(finalColor, alpha);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-  }, [fusionState, getParticleColor]);
 
   return (
     <group>
-      <points ref={particlesRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={particleCount}
-            array={initialPositions.current || new Float32Array(particleCount * 3)}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <primitive object={particleMaterial} attach="material" />
-      </points>
+      <instancedMesh ref={meshRef} args={[null, null, PARTICLE_COUNT]}>
+        <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
+        <meshStandardMaterial
+          color={cubeColor}
+          emissive={cubeColor}
+          emissiveIntensity={emissiveIntensity}
+          metalness={0.3}
+          roughness={0.7}
+        />
+      </instancedMesh>
 
       {/* Point light for fusion states */}
       {fusionState !== 'none' && (
         <pointLight
-          color={getParticleColor}
-          intensity={fusionState === 'massive' ? 3 : fusionState === 'hydrogen' ? 2 : 1}
+          color={cubeColor}
+          intensity={emissiveIntensity * 2}
           distance={30}
           decay={2}
         />
@@ -265,11 +250,11 @@ function ParticleCloud({ mass, radius, objectType }) {
 /**
  * Info overlay showing current state
  */
-function InfoOverlay({ mass, objectType, fusionState }) {
+function InfoOverlay({ mass, objectType }) {
   const getStateDescription = () => {
     if (mass < 0.001) return 'Diffuse cloud - no hydrostatic equilibrium';
-    if (mass < 0.013) return 'Gravitationally bound - no fusion';
-    if (mass < 0.08) return 'Deuterium fusion - brown dwarf';
+    if (mass < 0.013) return 'Gravitationally bound - forming sphere';
+    if (mass < 0.08) return 'Deuterium fusion - brown dwarf glowing';
     if (mass < 8) return 'Hydrogen fusion - main sequence star';
     return 'Massive star - intense fusion';
   };
@@ -283,25 +268,27 @@ function InfoOverlay({ mass, objectType, fusionState }) {
       color: '#e9e9ea',
       padding: '20px',
       borderRadius: '8px',
-      fontFamily: 'monospace',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '14px',
       zIndex: 10,
-      maxWidth: '300px'
+      maxWidth: '350px',
+      pointerEvents: 'none'
     }}>
       <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#8c7ae6', fontSize: '16px' }}>
         Particle Simulation
       </div>
       <div style={{ marginBottom: '8px' }}>
-        <span style={{ color: '#a1a1a8' }}>Object Type:</span>{' '}
-        <span style={{ color: '#f4d03f' }}>{objectType}</span>
-      </div>
-      <div style={{ marginBottom: '8px' }}>
         <span style={{ color: '#a1a1a8' }}>State:</span>{' '}
         <span style={{ color: '#4ade80' }}>{getStateDescription()}</span>
       </div>
-      <div style={{ marginTop: '15px', fontSize: '12px', color: '#a1a1a8', lineHeight: '1.5' }}>
-        Each particle represents a portion of the object's mass. Watch how gravity causes
-        collapse when mass exceeds hydrostatic equilibrium threshold.
+      <div style={{ marginTop: '15px', fontSize: '12px', color: '#a1a1a8', lineHeight: '1.6' }}>
+        {mass < 0.001 ? (
+          'Below 0.001 M☉: Particles float freely in space'
+        ) : mass < 0.013 ? (
+          'At 0.001 M☉: Gravity pulls particles into a sphere!'
+        ) : (
+          'Fusion has begun - particles glow with nuclear energy'
+        )}
       </div>
     </div>
   );
@@ -311,47 +298,40 @@ function InfoOverlay({ mass, objectType, fusionState }) {
  * Main ParticleSimulation component
  */
 export default function ParticleSimulation({ mass, radius, objectType }) {
-  const fusionState = useMemo(() => {
-    if (mass < 0.013) return 'none';
-    if (mass < 0.08) return 'deuterium';
-    if (mass < 8) return 'hydrogen';
-    return 'massive';
-  }, [mass]);
-
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <InfoOverlay mass={mass} objectType={objectType} fusionState={fusionState} />
+    <div style={{ width: '100%', height: '100%', position: 'relative', minHeight: '600px' }}>
+      <InfoOverlay mass={mass} objectType={objectType} />
       <Canvas
-        camera={{ position: [0, 0, 20], fov: 60 }}
+        camera={{ position: [0, 0, 15], fov: 60 }}
         style={{ width: '100%', height: '100%' }}
       >
         {/* Ambient light */}
-        <ambientLight intensity={0.2} />
+        <ambientLight intensity={0.3} />
+
+        {/* Directional light */}
+        <directionalLight position={[10, 10, 5]} intensity={0.5} />
 
         {/* Stars background */}
         <Stars
           radius={100}
           depth={50}
-          count={5000}
+          count={3000}
           factor={4}
           saturation={0}
           fade
-          speed={0.5}
+          speed={0.3}
         />
 
-        {/* Particle cloud */}
-        <ParticleCloud mass={mass} radius={radius} objectType={objectType} />
-
-        {/* Reference grid */}
-        <gridHelper args={[30, 30, '#393941', '#252528']} />
+        {/* Cube particles */}
+        <CubeParticles mass={mass} radius={radius} />
 
         {/* Camera controls */}
         <OrbitControls
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minDistance={10}
-          maxDistance={50}
+          minDistance={5}
+          maxDistance={30}
           autoRotate={true}
           autoRotateSpeed={0.5}
         />

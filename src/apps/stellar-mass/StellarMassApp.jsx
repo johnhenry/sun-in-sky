@@ -1,10 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import MassVisualization from './MassVisualization.jsx';
 import ParticleSimulation from './components/ParticleSimulation.jsx';
-import InternalStructure from './components/InternalStructure.jsx';
-import SpacetimeCurvature from './components/SpacetimeCurvature.jsx';
-import TidalForce from './components/TidalForce.jsx';
-import DensityProfile from './components/DensityProfile.jsx';
 import LearnPanel from '../../shared/components/LearnPanel/LearnPanel.jsx';
 import ChallengePanel from '../../shared/components/ChallengePanel/ChallengePanel.jsx';
 import { initializeStorage } from '../../shared/utils/localStorage.js';
@@ -224,17 +219,9 @@ export default function StellarMassApp() {
   const [radius, setRadius] = useState(null); // Will be set to realistic default
   const [containerWidth, setContainerWidth] = useState(800);
 
-  // View state
-  const [viewMode, setViewMode] = useState('mass-scale'); // 'mass-scale', 'internal-structure', 'spacetime', 'tidal-forces', 'density-profile', 'particle-sim'
-  const [showComparison, setShowComparison] = useState(false);
-  const [yAxisMode, setYAxisMode] = useState('dynamic');
-
   // Panel states
   const [learnPanelOpen, setLearnPanelOpen] = useState(false);
   const [challengePanelOpen, setChallengePanelOpen] = useState(false);
-
-  // 3D visualization loading state
-  const [vizLoading, setVizLoading] = useState(true);
 
   const containerRef = useRef(null);
 
@@ -484,56 +471,105 @@ export default function StellarMassApp() {
           </svg>
         </div>
 
-        {/* Current Mass and Type Display */}
+        {/* Main Layout: Particle Simulation + Stats Panel */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '15px',
-          marginBottom: '20px'
+          gridTemplateColumns: containerWidth > 768 ? '1fr 300px' : '1fr',
+          gap: '20px',
+          marginBottom: '20px',
+          minHeight: '600px'
         }}>
+          {/* Particle Simulation */}
           <div style={{
-            padding: '20px',
-            backgroundColor: '#252528',
+            backgroundColor: '#000',
             borderRadius: '8px',
-            textAlign: 'center'
+            overflow: 'hidden',
+            position: 'relative'
           }}>
-            <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
-              Mass
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#f4d03f' }}>
-              {formatMass(mass)}
-            </div>
+            <ParticleSimulation
+              mass={mass}
+              radius={radius || radiusRange.realistic}
+              objectType={objectType}
+            />
           </div>
 
+          {/* Stats Panel */}
           <div style={{
-            padding: '20px',
-            backgroundColor: '#252528',
-            borderRadius: '8px',
-            textAlign: 'center'
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '15px'
           }}>
-            <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
-              Object Type
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#8c7ae6' }}>
-              {objectType}
-            </div>
-          </div>
-
-          {mass >= 0.001 && radius && (
             <div style={{
               padding: '20px',
               backgroundColor: '#252528',
-              borderRadius: '8px',
-              textAlign: 'center'
+              borderRadius: '8px'
             }}>
               <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Radius
+                Mass
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4ade80' }}>
-                {formatRadius(radius)}
+              <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#f4d03f' }}>
+                {formatMass(mass)}
               </div>
             </div>
-          )}
+
+            <div style={{
+              padding: '20px',
+              backgroundColor: '#252528',
+              borderRadius: '8px'
+            }}>
+              <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
+                Object Type
+              </div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#8c7ae6' }}>
+                {objectType}
+              </div>
+            </div>
+
+            {mass >= 0.001 && radius && (
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#252528',
+                borderRadius: '8px'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
+                  Radius
+                </div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#4ade80' }}>
+                  {formatRadius(radius)}
+                </div>
+              </div>
+            )}
+
+            {luminosity > 0 && (
+              <>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#252528',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
+                    Temperature
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#ef4444' }}>
+                    {surfaceTemp.toExponential(2)} K
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#252528',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ fontSize: '0.9rem', color: '#a1a1a8', marginBottom: '5px' }}>
+                    Luminosity
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#f4d03f' }}>
+                    {luminosity.toExponential(2)} L☉
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Mass Slider */}
@@ -639,206 +675,6 @@ export default function StellarMassApp() {
           </div>
         )}
 
-        {/* View Mode Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '10px',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          justifyContent: 'center'
-        }}>
-          {[
-            { id: 'mass-scale', label: '3D Visualization', icon: '🌍' },
-            { id: 'particle-sim', label: 'Particle Simulation', icon: '✨' },
-            { id: 'internal-structure', label: 'Internal Structure', icon: '🎯' },
-            { id: 'spacetime', label: 'Spacetime', icon: '🌀' },
-            { id: 'tidal-forces', label: 'Tidal Forces', icon: '🌊' },
-            { id: 'density-profile', label: 'Density Profile', icon: '📊' }
-          ].map(mode => (
-            <button
-              key={mode.id}
-              onClick={() => setViewMode(mode.id)}
-              style={{
-                padding: '10px 15px',
-                backgroundColor: viewMode === mode.id ? '#8c7ae6' : '#393941',
-                color: '#e9e9ea',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 'bold',
-                transition: 'all 0.2s'
-              }}
-            >
-              {mode.icon} {mode.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Main Visualization Area */}
-        <div style={{
-          minHeight: '500px',
-          marginBottom: '30px',
-          backgroundColor: viewMode === 'mass-scale' || viewMode === 'particle-sim' ? '#000' : '#252528',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          position: 'relative'
-        }}>
-          {viewMode === 'mass-scale' && (
-            <>
-              {vizLoading && (
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  textAlign: 'center',
-                  zIndex: 10
-                }}>
-                  <div className="loading-spinner" />
-                  <p>Loading 3D Visualization...</p>
-                </div>
-              )}
-              <MassVisualization
-                mass={mass}
-                radius={radius || radiusRange.realistic}
-                objectType={objectType}
-                onLoad={() => setVizLoading(false)}
-                showComparison={showComparison}
-              />
-            </>
-          )}
-
-          {viewMode === 'particle-sim' && (
-            <ParticleSimulation
-              mass={mass}
-              radius={radius || radiusRange.realistic}
-              objectType={objectType}
-            />
-          )}
-
-          {viewMode === 'internal-structure' && (
-            <InternalStructure
-              mass={mass}
-              radius={radius || radiusRange.realistic}
-              objectType={objectType}
-            />
-          )}
-
-          {viewMode === 'spacetime' && (
-            <SpacetimeCurvature
-              mass={mass}
-              radius={radius || radiusRange.realistic}
-              objectType={objectType}
-            />
-          )}
-
-          {viewMode === 'tidal-forces' && (
-            <TidalForce
-              mass={mass}
-              radius={radius || radiusRange.realistic}
-              objectType={objectType}
-            />
-          )}
-
-          {viewMode === 'density-profile' && (
-            <DensityProfile
-              mass={mass}
-              radius={radius || radiusRange.realistic}
-              objectType={objectType}
-            />
-          )}
-        </div>
-
-        {/* Energy Dashboard */}
-        <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '15px', textAlign: 'center' }}>
-            Physical Properties
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '15px'
-          }}>
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#252528',
-              borderRadius: '8px'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Luminosity
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#f4d03f' }}>
-                {luminosity === 0 ? 'No Fusion' : `${luminosity.toExponential(2)} L☉`}
-              </div>
-            </div>
-
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#252528',
-              borderRadius: '8px'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Surface Temp
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#ef4444' }}>
-                {surfaceTemp.toExponential(2)} K
-              </div>
-            </div>
-
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#252528',
-              borderRadius: '8px'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Core Temp
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#fb923c' }}>
-                {coreTemp.toExponential(2)} K
-              </div>
-            </div>
-
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#252528',
-              borderRadius: '8px'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Escape Velocity
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#60a5fa' }}>
-                {escapeVelocity.toExponential(2)} km/s
-              </div>
-            </div>
-
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#252528',
-              borderRadius: '8px'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Surface Gravity
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#a78bfa' }}>
-                {surfaceGravity.toFixed(2)} m/s²
-              </div>
-            </div>
-
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#252528',
-              borderRadius: '8px'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: '#a1a1a8', marginBottom: '5px' }}>
-                Estimated Lifetime
-              </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#4ade80' }}>
-                {lifetime}
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Preset Buttons */}
         <div style={{ marginBottom: '30px' }}>
@@ -846,16 +682,22 @@ export default function StellarMassApp() {
             Quick Presets
           </h3>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            gap: '10px'
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '10px',
+            flexWrap: 'wrap'
           }}>
-            {MASS_PRESETS.map((preset) => (
+            {[
+              { name: 'Earth', value: 3e-6 },
+              { name: 'Jupiter', value: 0.001 },
+              { name: 'Sun', value: 1.0 },
+              { name: 'Neutron Star', value: 1.5 }
+            ].map((preset) => (
               <button
                 key={preset.name}
                 onClick={() => handlePresetClick(preset.value)}
                 style={{
-                  padding: '15px',
+                  padding: '15px 25px',
                   backgroundColor: Math.abs(Math.log10(preset.value) - logMass) < 0.1
                     ? '#8c7ae6'
                     : '#393941',
@@ -864,7 +706,7 @@ export default function StellarMassApp() {
                   borderRadius: '8px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  fontSize: '0.95rem',
+                  fontSize: '1rem',
                   fontWeight: 'bold'
                 }}
                 onMouseEnter={(e) => {
@@ -878,10 +720,7 @@ export default function StellarMassApp() {
                   }
                 }}
               >
-                <div>{preset.name}</div>
-                <div style={{ fontSize: '0.75rem', color: '#a1a1a8', marginTop: '5px' }}>
-                  {preset.description}
-                </div>
+                {preset.name}
               </button>
             ))}
           </div>
