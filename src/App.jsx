@@ -8,6 +8,8 @@ const SunPositionViz = () => {
   const [latitude, setLatitude] = useState(45);
   const [minuteOfYear, setMinuteOfYear] = useState(171 * 24 * 60 + 12 * 60);
   const [axialTilt, setAxialTilt] = useState(23.45);
+  const [dayLength, setDayLength] = useState(24); // hours per day
+  const [yearLength, setYearLength] = useState(365); // days per year
   const [viewMode, setViewMode] = useState('day');
   const [yAxisMode, setYAxisMode] = useState('dynamic');
   const [containerWidth, setContainerWidth] = useState(800);
@@ -40,35 +42,52 @@ const SunPositionViz = () => {
     window.addEventListener('resize', updateWidth);
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
-  
-  useEffect(() => {
-    if (isPlaying) {
-      const step = viewMode === 'day' ? 15 : 120;
-      playRef.current = setInterval(() => {
-        setMinuteOfYear(m => (m + step) % (365 * 24 * 60));
-      }, 50);
-    } else {
-      clearInterval(playRef.current);
-    }
-    return () => clearInterval(playRef.current);
-  }, [isPlaying, viewMode]);
-  
+
   const width = containerWidth;
   const height = 280;
   const padding = { top: 25, right: 50, bottom: 45, left: 45 };
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
-  
-  const totalMinutesInYear = 365 * 24 * 60;
-  
-  const dayOfYear = Math.floor(minuteOfYear / (24 * 60)) + 1;
-  const hourOfDay = (minuteOfYear % (24 * 60)) / 60;
+
+  const minutesPerDay = dayLength * 60;
+  const totalMinutesInYear = yearLength * minutesPerDay;
+
+  // Clamp minuteOfYear to valid range when parameters change
+  useEffect(() => {
+    if (minuteOfYear >= totalMinutesInYear) {
+      setMinuteOfYear(totalMinutesInYear - 1);
+    }
+  }, [totalMinutesInYear]);
+
+  // Animation effect - placed after totalMinutesInYear declaration
+  useEffect(() => {
+    if (isPlaying) {
+      const step = viewMode === 'day' ? 15 : 120;
+      playRef.current = setInterval(() => {
+        setMinuteOfYear(m => {
+          const next = m + step;
+          // Wrap around using current totalMinutesInYear
+          return next >= totalMinutesInYear ? 0 : next;
+        });
+      }, 50);
+    } else {
+      clearInterval(playRef.current);
+    }
+    return () => clearInterval(playRef.current);
+  }, [isPlaying, viewMode, totalMinutesInYear]);
+
+  const dayOfYear = Math.floor(minuteOfYear / minutesPerDay) + 1;
+  const hourOfDay = (minuteOfYear % minutesPerDay) / 60;
   
   // Key astronomical values derived from tilt
   const tropicLat = axialTilt;
   const arcticLat = 90 - axialTilt;
   
-  const getDeclination = (day) => axialTilt * Math.sin((2 * Math.PI / 365) * (day - 81));
+  const getDeclination = (day) => {
+    // Clamp day to valid range and handle edge cases
+    const clampedDay = Math.max(1, Math.min(day, yearLength));
+    return axialTilt * Math.sin((2 * Math.PI / yearLength) * (clampedDay - yearLength * 0.22)); // 0.22 ≈ 81/365 (vernal equinox)
+  };
   const declination = getDeclination(dayOfYear);
   
   const getDateTimeLabel = () => {
@@ -83,7 +102,8 @@ const SunPositionViz = () => {
   const getAltitude = (hour, decl) => {
     const decRad = (decl * Math.PI) / 180;
     const latRad = (latitude * Math.PI) / 180;
-    const hourAngle = ((hour - 12) * 15 * Math.PI) / 180;
+    const solarNoon = dayLength / 2;
+    const hourAngle = ((hour - solarNoon) * 360 / dayLength * Math.PI) / 180;
     const sinAltitude =
       Math.sin(latRad) * Math.sin(decRad) +
       Math.cos(latRad) * Math.cos(decRad) * Math.cos(hourAngle);
@@ -94,7 +114,8 @@ const SunPositionViz = () => {
   const getAzimuth = (hour, decl) => {
     const decRad = (decl * Math.PI) / 180;
     const latRad = (latitude * Math.PI) / 180;
-    const hourAngle = ((hour - 12) * 15 * Math.PI) / 180;
+    const solarNoon = dayLength / 2;
+    const hourAngle = ((hour - solarNoon) * 360 / dayLength * Math.PI) / 180;
 
     const altitude = getAltitude(hour, decl);
     const altRad = (altitude * Math.PI) / 180;
@@ -105,7 +126,7 @@ const SunPositionViz = () => {
     let azimuth = (Math.acos(Math.max(-1, Math.min(1, cosAzimuth))) * 180) / Math.PI;
 
     // Adjust for afternoon (west side)
-    if (hour > 12) {
+    if (hour > solarNoon) {
       azimuth = 360 - azimuth;
     }
 
@@ -144,8 +165,10 @@ const SunPositionViz = () => {
   };
   
   const getAltitudeAtMinute = (minute) => {
-    const day = Math.floor(minute / (24 * 60)) + 1;
-    const hour = (minute % (24 * 60)) / 60;
+    // Clamp minute to valid range
+    const clampedMinute = Math.max(0, Math.min(minute, totalMinutesInYear - 1));
+    const day = Math.floor(clampedMinute / minutesPerDay) + 1;
+    const hour = (clampedMinute % minutesPerDay) / 60;
     const decl = getDeclination(day);
     return getAltitude(hour, decl);
   };
@@ -155,8 +178,9 @@ const SunPositionViz = () => {
     const points = [];
     // At the poles (latitude ±90), sun altitude is constant throughout the day
     // It equals the declination. We still need to generate points for rendering.
-    for (let i = 0; i <= 240; i++) {
-      const hour = i / 10;
+    const numPoints = 240;
+    for (let i = 0; i <= numPoints; i++) {
+      const hour = (i / numPoints) * dayLength;
       points.push({ hour, altitude: getAltitude(hour, decl) });
     }
     return points;
@@ -169,10 +193,10 @@ const SunPositionViz = () => {
       points.push({ minute, altitude: getAltitudeAtMinute(minute) });
     }
     return points;
-  }, [latitude, axialTilt]);
-  
-  const dayAltitudes = useMemo(() => computeDayAltitudes(declination), [latitude, declination]);
-  const equinoxAltitudes = useMemo(() => computeDayAltitudes(0), [latitude]);
+  }, [latitude, axialTilt, dayLength, yearLength, totalMinutesInYear, minutesPerDay]);
+
+  const dayAltitudes = useMemo(() => computeDayAltitudes(declination), [latitude, declination, dayLength]);
+  const equinoxAltitudes = useMemo(() => computeDayAltitudes(0), [latitude, dayLength]);
   
   const rawData = viewMode === 'day' ? dayAltitudes : yearAltitudes;
   
@@ -207,19 +231,19 @@ const SunPositionViz = () => {
   const curveData = useMemo(() => {
     return rawData.map((p) => ({
       ...p,
-      x: padding.left + ((viewMode === 'day' ? p.hour / 24 : p.minute / totalMinutesInYear)) * graphWidth,
+      x: padding.left + ((viewMode === 'day' ? p.hour / dayLength : p.minute / totalMinutesInYear)) * graphWidth,
       y: altToY(p.altitude)
     }));
-  }, [rawData, graphWidth, yMax, yRange, viewMode]);
+  }, [rawData, graphWidth, yMax, yRange, viewMode, dayLength, totalMinutesInYear]);
   
   const equinoxCurve = useMemo(() => {
     if (viewMode !== 'day') return null;
     return equinoxAltitudes.map((p) => ({
       ...p,
-      x: padding.left + (p.hour / 24) * graphWidth,
+      x: padding.left + (p.hour / dayLength) * graphWidth,
       y: altToY(p.altitude)
     }));
-  }, [equinoxAltitudes, graphWidth, yMax, yRange, viewMode]);
+  }, [equinoxAltitudes, graphWidth, yMax, yRange, viewMode, dayLength]);
   
   // FIX #2: Ensure path is always generated even at poles where altitude is constant
   // At poles, the path becomes a horizontal line. We need to ensure it renders visibly.
@@ -248,8 +272,8 @@ const SunPositionViz = () => {
   const nadirVisible = yMin <= -90;
   
   const currentAltitude = getAltitudeAtMinute(minuteOfYear);
-  const currentX = viewMode === 'day' 
-    ? padding.left + (hourOfDay / 24) * graphWidth
+  const currentX = viewMode === 'day'
+    ? padding.left + (hourOfDay / dayLength) * graphWidth
     : padding.left + (minuteOfYear / totalMinutesInYear) * graphWidth;
   const currentY = altToY(currentAltitude);
   
@@ -263,22 +287,21 @@ const SunPositionViz = () => {
   const sunsetPoint = viewMode === 'day' ? curveData.find((p, i) => i > 0 && curveData[i-1].altitude >= 0 && p.altitude < 0) : null;
   
   const daylightHours = viewMode === 'day' ? (
-    dayType === 'midnight-sun' ? 24 
-    : dayType === 'polar-night' ? 0 
-    : (curveData.filter(p => p.altitude >= 0).length / curveData.length) * 24
+    dayType === 'midnight-sun' ? dayLength
+    : dayType === 'polar-night' ? 0
+    : (curveData.filter(p => p.altitude >= 0).length / curveData.length) * dayLength
   ) : null;
   
-  // FIX #5: All planet axial tilts as bookmarks (sorted 0° to 90°)
-  const tiltPresets = [
-    { value: 0.034, label: '0.0° Mercury' },
-    { value: 2.6, label: '2.6° Venus' },
-    { value: 3.1, label: '3.1° Jupiter' },
-    { value: 23.4, label: '23.4° Earth' },
-    { value: 25.2, label: '25.2° Mars' },
-    { value: 26.7, label: '26.7° Saturn' },
-    { value: 28.3, label: '28.3° Neptune' },
-    { value: 82.2, label: '82.2° Uranus' },
-    { value: 90, label: '90° Extreme' },
+  // Planet presets with axial tilt, day length, and year length
+  const planetPresets = [
+    { name: 'Mercury', tilt: 0.034, dayLength: 1407.6, yearLength: 88 },
+    { name: 'Venus', tilt: 2.6, dayLength: 5832.5, yearLength: 225 },
+    { name: 'Earth', tilt: 23.4, dayLength: 24, yearLength: 365 },
+    { name: 'Mars', tilt: 25.2, dayLength: 24.6, yearLength: 687 },
+    { name: 'Jupiter', tilt: 3.1, dayLength: 9.9, yearLength: 4333 },
+    { name: 'Saturn', tilt: 26.7, dayLength: 10.7, yearLength: 10759 },
+    { name: 'Uranus', tilt: 82.2, dayLength: 17.2, yearLength: 30687 },
+    { name: 'Neptune', tilt: 28.3, dayLength: 16.1, yearLength: 60190 },
   ];
   
   // FIX #3: Fixed latitude bookmarks with proper geographic labels
@@ -293,22 +316,22 @@ const SunPositionViz = () => {
     { value: 90, label: '90° North Pole' },
   ];
   
-  // Key dates with accurate day numbers
-  const datePresets = [
-    { minute: 0, label: 'Jan 1', day: 1 },
-    { minute: 79 * 24 * 60, label: 'Mar Equinox', day: 80 },
-    { minute: 171 * 24 * 60 + 12 * 60, label: 'Jun Solstice', day: 172 },
-    { minute: 265 * 24 * 60, label: 'Sep Equinox', day: 266 },
-    { minute: 354 * 24 * 60, label: 'Dec Solstice', day: 355 },
-  ];
+  // Key dates scaled to current year length
+  const datePresets = useMemo(() => [
+    { minute: 0, label: 'Start', day: 1 },
+    { minute: Math.floor(yearLength * 0.219) * minutesPerDay, label: 'Spring Eq', day: Math.floor(yearLength * 0.219) + 1 },
+    { minute: Math.floor(yearLength * 0.470) * minutesPerDay + (minutesPerDay / 2), label: 'Summer Sol', day: Math.floor(yearLength * 0.470) + 1 },
+    { minute: Math.floor(yearLength * 0.726) * minutesPerDay, label: 'Fall Eq', day: Math.floor(yearLength * 0.726) + 1 },
+    { minute: Math.floor(yearLength * 0.971) * minutesPerDay, label: 'Winter Sol', day: Math.floor(yearLength * 0.971) + 1 },
+  ], [yearLength, minutesPerDay]);
   
-  // Time of day presets
-  const timePresets = [
-    { hour: 0, label: 'Midnight' },
-    { hour: 6, label: 'Dawn' },
-    { hour: 12, label: 'Noon' },
-    { hour: 18, label: 'Dusk' },
-  ];
+  // Time of day presets scaled to current day length
+  const timePresets = useMemo(() => [
+    { hour: 0, label: 'Start' },
+    { hour: dayLength * 0.25, label: 'Quarter' },
+    { hour: dayLength * 0.5, label: 'Noon' },
+    { hour: dayLength * 0.75, label: 'Three-Quarter' },
+  ], [dayLength]);
   
   const yGridLines = useMemo(() => {
     const lines = [];
@@ -319,24 +342,24 @@ const SunPositionViz = () => {
     return lines;
   }, [yMin, yMax, yRange]);
   
-  // Season markers for year view
+  // Season markers for year view (scaled to yearLength)
   const seasonMarkers = useMemo(() => {
     if (viewMode !== 'year') return [];
     return [
-      { day: 80, label: 'Spring', color: '#4ade80' },
-      { day: 172, label: 'Summer', color: '#f4d03f' },
-      { day: 266, label: 'Fall', color: '#fb923c' },
-      { day: 355, label: 'Winter', color: '#60a5fa' },
+      { day: Math.floor(yearLength * 0.219) + 1, label: 'Spring', color: '#4ade80' },
+      { day: Math.floor(yearLength * 0.470) + 1, label: 'Summer', color: '#f4d03f' },
+      { day: Math.floor(yearLength * 0.726) + 1, label: 'Fall', color: '#fb923c' },
+      { day: Math.floor(yearLength * 0.971) + 1, label: 'Winter', color: '#60a5fa' },
     ].map(s => ({
       ...s,
-      x: padding.left + ((s.day - 1) * 24 * 60 / totalMinutesInYear) * graphWidth
+      x: padding.left + ((s.day - 1) * minutesPerDay / totalMinutesInYear) * graphWidth
     }));
-  }, [viewMode, graphWidth]);
+  }, [viewMode, graphWidth, yearLength, minutesPerDay, totalMinutesInYear]);
 
   // Helper to set time while preserving date
   const setTimeOfDay = (hour) => {
-    const currentDay = Math.floor(minuteOfYear / (24 * 60));
-    setMinuteOfYear(currentDay * 24 * 60 + hour * 60);
+    const currentDay = Math.floor(minuteOfYear / minutesPerDay);
+    setMinuteOfYear(currentDay * minutesPerDay + hour * 60);
   };
 
   // Keyboard navigation support
@@ -390,13 +413,13 @@ const SunPositionViz = () => {
     let tooltipHour, tooltipDay, tooltipMinute;
 
     if (viewMode === 'day') {
-      tooltipHour = fraction * 24;
+      tooltipHour = fraction * dayLength;
       tooltipDay = dayOfYear;
-      tooltipMinute = Math.floor(minuteOfYear / (24 * 60)) * 24 * 60 + tooltipHour * 60;
+      tooltipMinute = Math.floor(minuteOfYear / minutesPerDay) * minutesPerDay + tooltipHour * 60;
     } else {
       tooltipMinute = fraction * totalMinutesInYear;
-      tooltipDay = Math.floor(tooltipMinute / (24 * 60)) + 1;
-      tooltipHour = (tooltipMinute % (24 * 60)) / 60;
+      tooltipDay = Math.floor(tooltipMinute / minutesPerDay) + 1;
+      tooltipHour = (tooltipMinute % minutesPerDay) / 60;
     }
 
     const tooltipAltitude = getAltitudeAtMinute(tooltipMinute);
@@ -436,7 +459,7 @@ const SunPositionViz = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
         <div>
           <h2 style={{ fontSize: '16px', margin: 0, fontWeight: 600 }}>
-            Solar Altitude Throughout {viewMode === 'day' ? 'the Day' : 'the Year'}
+            Solar Altitude Throughout {viewMode === 'day' ? 'Day' : 'Year'}
           </h2>
           <p style={{ fontSize: '10px', margin: '2px 0 0 0', color: '#a1a1a8' }}>
             Use arrow keys to navigate, Space to play/pause
@@ -479,7 +502,7 @@ const SunPositionViz = () => {
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 aria-pressed={viewMode === mode}
-                aria-label={`${mode === 'day' ? '24 Hours' : '365 Days'} view`}
+                aria-label={`${mode === 'day' ? 'Day' : 'Year'} view`}
                 onMouseOver={(e) => {
                   if (viewMode !== mode) e.target.style.backgroundColor = 'rgba(140, 122, 230, 0.2)';
                 }}
@@ -497,7 +520,7 @@ const SunPositionViz = () => {
                   transition: 'all 0.15s ease',
                 }}
               >
-                {mode === 'day' ? '24 Hours' : '365 Days'}
+                {mode === 'day' ? 'Day' : 'Year'}
               </button>
             ))}
           </div>
@@ -604,26 +627,24 @@ const SunPositionViz = () => {
         })}
         
         {/* Grid - time (day view) */}
-        {viewMode === 'day' && [0, 6, 12, 18, 24].map(hour => {
-          const x = padding.left + (hour / 24) * graphWidth;
+        {viewMode === 'day' && Array.from({ length: 5 }, (_, i) => i * (dayLength / 4)).map(hour => {
+          const x = padding.left + (hour / dayLength) * graphWidth;
           return (
             <g key={hour}>
               <line x1={x} y1={padding.top} x2={x} y2={padding.top + graphHeight} stroke="#393941" strokeWidth="1" />
               <text x={x} y={padding.top + graphHeight + 14} fill="#a1a1a8" fontSize="10" textAnchor="middle">
-                {hour === 0 || hour === 24 ? '00:00' : `${hour}:00`}
+                {hour.toFixed(0)}h
               </text>
             </g>
           );
         })}
         
-        {/* Grid - months (year view) */}
-        {viewMode === 'year' && [
-          { day: 1, label: 'Jan' }, { day: 32, label: 'Feb' }, { day: 60, label: 'Mar' },
-          { day: 91, label: 'Apr' }, { day: 121, label: 'May' }, { day: 152, label: 'Jun' },
-          { day: 182, label: 'Jul' }, { day: 213, label: 'Aug' }, { day: 244, label: 'Sep' },
-          { day: 274, label: 'Oct' }, { day: 305, label: 'Nov' }, { day: 335, label: 'Dec' },
-        ].map((m, i) => {
-          const x = padding.left + ((m.day - 1) * 24 * 60 / totalMinutesInYear) * graphWidth;
+        {/* Grid - months (year view) - scaled to yearLength */}
+        {viewMode === 'year' && Array.from({ length: 12 }, (_, i) => ({
+          day: Math.floor((i / 12) * yearLength) + 1,
+          label: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i]
+        })).map((m, i) => {
+          const x = padding.left + ((m.day - 1) * minutesPerDay / totalMinutesInYear) * graphWidth;
           // Show abbreviated labels on narrow screens
           const showLabel = containerWidth > 500 || i % 2 === 0;
           return (
@@ -1035,7 +1056,7 @@ const SunPositionViz = () => {
               <span style={{ fontSize: '10px', color: '#e67e22' }}>Inside Arctic Circle</span>
             )}
           </div>
-          
+
           {/* Visual latitude bar with markers */}
           <div style={{ position: 'relative', height: '20px', marginBottom: '4px' }}>
             <input
@@ -1095,8 +1116,8 @@ const SunPositionViz = () => {
               </>
             )}
           </div>
-          
-          {/* FIX #4: Latitude bookmarks anchored to left in a column layout */}
+
+          {/* Latitude bookmarks */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '9px', marginTop: '4px' }}>
             {latPresets.map(p => (
               <button
@@ -1125,61 +1146,118 @@ const SunPositionViz = () => {
             ))}
           </div>
         </div>
-        
-        {/* Axial Tilt */}
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <label style={{ fontSize: '12px' }}>
-              Axial Tilt: <span style={{ color: '#6ab0f3', fontWeight: 500 }}>{axialTilt.toFixed(1)}°</span>
-            </label>
-            <span style={{ fontSize: '10px', color: '#a1a1a8' }}>
-              Tropics ±{tropicLat.toFixed(0)}° · Arctic ±{arcticLat.toFixed(0)}°
-            </span>
+
+        {/* Planetary Parameters (Tilt, Day, Year) */}
+        <div style={{
+          flex: 2,
+          minWidth: containerWidth < 600 ? '100%' : '400px',
+          backgroundColor: '#232334',
+          padding: '12px',
+          borderRadius: '6px',
+          overflow: 'hidden'
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: '#e9e9ea' }}>
+            Planetary Parameters
           </div>
-          
-          <input
-            type="range"
-            min={0}
-            max={90}
-            step={0.1}
-            value={axialTilt}
-            onChange={(e) => setAxialTilt(parseFloat(e.target.value))}
-            aria-label="Axial tilt slider"
-            aria-valuetext={`${axialTilt.toFixed(1)} degrees`}
-            aria-valuemin={0}
-            aria-valuemax={90}
-            aria-valuenow={axialTilt}
-            title="Adjust planetary axial tilt (obliquity)"
-            style={{ width: '100%', accentColor: '#6ab0f3', marginBottom: '4px', cursor: 'pointer' }}
-          />
-          
-          {/* FIX #6: Axial tilt bookmarks anchored to left in a column layout */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '9px', marginTop: '4px' }}>
-            {tiltPresets.map(p => (
+
+          {/* Planet presets */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px', overflow: 'visible' }}>
+            {planetPresets.map(p => (
               <button
-                key={p.label}
-                onClick={() => setAxialTilt(p.value)}
+                key={p.name}
+                onClick={() => {
+                  setAxialTilt(p.tilt);
+                  setDayLength(p.dayLength);
+                  setYearLength(p.yearLength);
+                }}
                 style={{
                   cursor: 'pointer',
-                  padding: '3px 6px',
-                  borderRadius: '3px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
                   border: 'none',
-                  textAlign: 'left',
-                  backgroundColor: Math.abs(axialTilt - p.value) < 0.5 ? 'rgba(106, 176, 243, 0.25)' : '#27272a',
-                  color: Math.abs(axialTilt - p.value) < 0.5 ? '#6ab0f3' : '#a1a1a8',
-                  fontSize: '9px',
+                  backgroundColor: Math.abs(axialTilt - p.tilt) < 0.5 && Math.abs(dayLength - p.dayLength) < 1 && Math.abs(yearLength - p.yearLength) < 10 ? '#6ab0f3' : '#27272a',
+                  color: Math.abs(axialTilt - p.tilt) < 0.5 && Math.abs(dayLength - p.dayLength) < 1 && Math.abs(yearLength - p.yearLength) < 10 ? '#1a1a1c' : '#a1a1a8',
+                  fontSize: '10px',
+                  fontWeight: 500,
                   transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseOver={(e) => {
-                  if (Math.abs(axialTilt - p.value) >= 0.5) e.target.style.backgroundColor = 'rgba(106, 176, 243, 0.1)';
+                  if (!(Math.abs(axialTilt - p.tilt) < 0.5 && Math.abs(dayLength - p.dayLength) < 1 && Math.abs(yearLength - p.yearLength) < 10)) {
+                    e.target.style.backgroundColor = 'rgba(106, 176, 243, 0.2)';
+                  }
                 }}
                 onMouseOut={(e) => {
-                  if (Math.abs(axialTilt - p.value) >= 0.5) e.target.style.backgroundColor = '#27272a';
+                  if (!(Math.abs(axialTilt - p.tilt) < 0.5 && Math.abs(dayLength - p.dayLength) < 1 && Math.abs(yearLength - p.yearLength) < 10)) {
+                    e.target.style.backgroundColor = '#27272a';
+                  }
                 }}
               >
-                {p.label}
+                {p.name}
               </button>
             ))}
+          </div>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: containerWidth < 600 ? 'column' : 'row',
+            gap: '12px'
+          }}>
+            {/* Axial Tilt */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ fontSize: '11px', color: '#a1a1a8', display: 'block', marginBottom: '4px' }}>
+                Axial Tilt: <span style={{ color: '#6ab0f3', fontWeight: 500 }}>{axialTilt.toFixed(1)}°</span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={90}
+                step={0.1}
+                value={axialTilt}
+                onChange={(e) => setAxialTilt(parseFloat(e.target.value))}
+                aria-label="Axial tilt slider"
+                style={{ width: '100%', accentColor: '#6ab0f3', cursor: 'pointer', marginRight: containerWidth < 600 ? '0' : '0' }}
+              />
+            </div>
+
+            {/* Day Length */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ fontSize: '11px', color: '#a1a1a8', display: 'block', marginBottom: '4px' }}>
+                Day Length: <span style={{ color: '#4ade80', fontWeight: 500 }}>{dayLength.toFixed(1)}h</span>
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={200}
+                step={0.1}
+                value={dayLength}
+                onChange={(e) => setDayLength(parseFloat(e.target.value))}
+                aria-label="Day length slider"
+                style={{ width: '100%', accentColor: '#4ade80', cursor: 'pointer', marginRight: containerWidth < 600 ? '0' : '0' }}
+              />
+            </div>
+
+            {/* Year Length */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={{ fontSize: '11px', color: '#a1a1a8', display: 'block', marginBottom: '4px' }}>
+                Year Length: <span style={{ color: '#fb923c', fontWeight: 500 }}>{yearLength.toFixed(0)} days</span>
+              </label>
+              <input
+                type="range"
+                min={10}
+                max={1000}
+                step={1}
+                value={yearLength}
+                onChange={(e) => setYearLength(parseInt(e.target.value))}
+                aria-label="Year length slider"
+                style={{ width: '100%', accentColor: '#fb923c', cursor: 'pointer', marginRight: containerWidth < 600 ? '0' : '0' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ fontSize: '9px', color: '#a1a1a8', marginTop: '8px' }}>
+            Tropics: ±{tropicLat.toFixed(0)}° · Arctic: ±{arcticLat.toFixed(0)}°
           </div>
         </div>
       </div>
