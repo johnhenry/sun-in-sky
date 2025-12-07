@@ -67,7 +67,7 @@ function CubeParticles({ mass, radius }) {
   const cubeColor = useMemo(() => {
     switch (fusionState) {
       case 'none':
-        return new THREE.Color('#3a3a4c'); // Dark gray-blue
+        return new THREE.Color('#8a8a9c'); // Light gray-blue (visible against dark background)
       case 'deuterium':
         return new THREE.Color('#fb923c'); // Amber
       case 'hydrogen':
@@ -75,13 +75,15 @@ function CubeParticles({ mass, radius }) {
       case 'massive':
         return new THREE.Color('#60a5fa'); // Blue-white
       default:
-        return new THREE.Color('#3a3a4c');
+        return new THREE.Color('#8a8a9c');
     }
   }, [fusionState]);
 
   // Calculate emissive intensity
   const emissiveIntensity = useMemo(() => {
     switch (fusionState) {
+      case 'none':
+        return 0.2; // Small base emissive so cubes are always visible
       case 'deuterium':
         return 0.5;
       case 'hydrogen':
@@ -89,7 +91,7 @@ function CubeParticles({ mass, radius }) {
       case 'massive':
         return 3.0;
       default:
-        return 0;
+        return 0.2;
     }
   }, [fusionState]);
 
