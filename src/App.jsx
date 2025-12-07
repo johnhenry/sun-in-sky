@@ -34,6 +34,9 @@ const SunPositionViz = () => {
   // 3D Earth loading state
   const [earthLoading, setEarthLoading] = useState(true);
 
+  // Detect motion preference
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
   const containerRef = useRef(null);
   const playRef = useRef(null);
   const svgRef = useRef(null);
@@ -61,6 +64,80 @@ const SunPositionViz = () => {
     const hasOrientationAPI = typeof DeviceOrientationEvent !== 'undefined';
     setHasOrientationSensors(hasTouchScreen && hasOrientationAPI);
   }, []);
+
+  // Detect reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (e) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    // Pause animation if motion is reduced
+    if (mediaQuery.matches && isPlaying) {
+      setIsPlaying(false);
+    }
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Ignore if typing in input or panel is open
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (learnPanelOpen || challengePanelOpen) return;
+
+      switch(e.key.toLowerCase()) {
+        case ' ':  // Space: play/pause
+          e.preventDefault();
+          setIsPlaying(prev => !prev);
+          break;
+
+        case 'arrowleft':  // Left: -1 hour (day) or -1 day (year)
+          e.preventDefault();
+          const decrementStep = viewMode === 'day' ? 60 : 24 * 60;
+          setMinuteOfYear(prev => Math.max(0, prev - decrementStep));
+          break;
+
+        case 'arrowright':  // Right: +1 hour (day) or +1 day (year)
+          e.preventDefault();
+          const incrementStep = viewMode === 'day' ? 60 : 24 * 60;
+          setMinuteOfYear(prev => Math.min(totalMinutesInYear - 1, prev + incrementStep));
+          break;
+
+        case 'arrowup':  // Up: +5° latitude
+          e.preventDefault();
+          setLatitude(prev => Math.min(90, prev + 5));
+          break;
+
+        case 'arrowdown':  // Down: -5° latitude
+          e.preventDefault();
+          setLatitude(prev => Math.max(-90, prev - 5));
+          break;
+
+        case 'd':  // D: toggle day/year view
+          setViewMode(prev => prev === 'day' ? 'year' : 'day');
+          break;
+
+        case 'y':  // Y: cycle y-axis mode
+          setYAxisMode(prev => {
+            if (prev === 'dynamic') return 'fixed';
+            if (prev === 'fixed') return 'wide';
+            return 'dynamic';
+          });
+          break;
+
+        case 'escape':  // Esc: close panels
+          setLearnPanelOpen(false);
+          setChallengePanelOpen(false);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [viewMode, totalMinutesInYear, learnPanelOpen, challengePanelOpen]);
 
   const width = containerWidth;
   const height = 280;
@@ -1798,6 +1875,15 @@ const SunPositionViz = () => {
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+
+          /* Respect reduced motion preference */
+          @media (prefers-reduced-motion: reduce) {
+            * {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+            }
           }
         `}</style>
       </div>
