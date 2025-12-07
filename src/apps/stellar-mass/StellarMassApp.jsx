@@ -402,29 +402,87 @@ export default function StellarMassApp() {
   };
 
   // Chart dimensions
-  const chartHeight = 150;
-  const chartPadding = { top: 30, right: 20, bottom: 40, left: 20 };
+  const chartHeight = 300;
+  const chartPadding = { top: 30, right: 60, bottom: 50, left: 80 };
   const chartWidth = containerWidth - chartPadding.left - chartPadding.right;
+  const chartInnerHeight = chartHeight - chartPadding.top - chartPadding.bottom;
 
-  // Log scale for X-axis (10^-10 to 10^2)
-  const minLog = -10;
-  const maxLog = 2;
-  const logRange = maxLog - minLog;
+  // Log scale for X-axis (10^-10 to 10^2) - Mass
+  const minLogMass = -10;
+  const maxLogMass = 2;
+  const logMassRange = maxLogMass - minLogMass;
+
+  // Log scale for Y-axis (10^4 to 10^9 K) - Temperature
+  const minLogTemp = 4;
+  const maxLogTemp = 9;
+  const logTempRange = maxLogTemp - minLogTemp;
 
   // Convert log mass to X position
   const massToX = (logMassValue) => {
-    return ((logMassValue - minLog) / logRange) * chartWidth;
+    return ((logMassValue - minLogMass) / logMassRange) * chartWidth;
+  };
+
+  // Convert log temperature to Y position (inverted - high temp at top)
+  const tempToY = (logTempValue) => {
+    return chartInnerHeight - ((logTempValue - minLogTemp) / logTempRange) * chartInnerHeight;
   };
 
   // Generate X-axis tick marks (powers of 10)
   const xTicks = [];
-  for (let i = minLog; i <= maxLog; i += 2) {
+  for (let i = minLogMass; i <= maxLogMass; i += 2) {
     xTicks.push({
       logValue: i,
       x: massToX(i),
       label: i === 0 ? '1 M☉' : `10${i >= 0 ? '⁺' : ''}${Math.abs(i)}`
     });
   }
+
+  // Generate Y-axis tick marks (powers of 10)
+  const yTicks = [];
+  for (let i = minLogTemp; i <= maxLogTemp; i += 1) {
+    yTicks.push({
+      logValue: i,
+      y: tempToY(i),
+      label: `10${i >= 0 ? '' : ''}${i} K`
+    });
+  }
+
+  // Generate temperature curve (temperature vs mass at current radius)
+  const temperatureCurve = useMemo(() => {
+    const currentRadius = radius || radiusRange.realistic;
+    const points = [];
+    const numPoints = 200;
+
+    for (let i = 0; i <= numPoints; i++) {
+      const logM = minLogMass + (i / numPoints) * logMassRange;
+      const m = Math.pow(10, logM);
+      const temp = calculateCoreTemperature(m, currentRadius);
+      const logT = Math.log10(temp);
+
+      // Only add points within the visible range
+      if (logT >= minLogTemp && logT <= maxLogTemp) {
+        points.push({
+          x: massToX(logM),
+          y: tempToY(logT),
+          mass: m,
+          temp: temp
+        });
+      }
+    }
+
+    return points;
+  }, [radius, radiusRange.realistic]);
+
+  // Generate path string for the curve
+  const curvePath = useMemo(() => {
+    if (temperatureCurve.length === 0) return '';
+
+    let path = `M ${temperatureCurve[0].x},${temperatureCurve[0].y}`;
+    for (let i = 1; i < temperatureCurve.length; i++) {
+      path += ` L ${temperatureCurve[i].x},${temperatureCurve[i].y}`;
+    }
+    return path;
+  }, [temperatureCurve]);
 
   return (
     <div className="app-container" style={{
@@ -443,10 +501,13 @@ export default function StellarMassApp() {
           </p>
         </header>
 
-        {/* Enhanced Mass Scale */}
+        {/* Core Temperature vs Mass Chart */}
         <div style={{ marginBottom: '30px' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '15px', textAlign: 'center' }}>
-            Logarithmic Mass Scale
+            Core Temperature vs Mass
+            <span style={{ fontSize: '0.9rem', color: '#a1a1a8', display: 'block', marginTop: '5px' }}>
+              {radius !== null && `at current radius: ${formatRadius(radius)}`}
+            </span>
           </h2>
           <svg
             width={containerWidth}
@@ -454,120 +515,170 @@ export default function StellarMassApp() {
             style={{ backgroundColor: '#252528', borderRadius: '8px' }}
           >
             <g transform={`translate(${chartPadding.left}, ${chartPadding.top})`}>
-              {/* Background regions between thresholds */}
-              {dynamicThresholds.map((threshold, index) => {
-                if (index === dynamicThresholds.length - 1) return null;
-                const x1 = massToX(Math.log10(threshold.value));
-                const x2 = index < dynamicThresholds.length - 1
-                  ? massToX(Math.log10(dynamicThresholds[index + 1].value))
-                  : chartWidth;
+              {/* Grid lines for temperature */}
+              {yTicks.map((tick, index) => (
+                <line
+                  key={`y-grid-${index}`}
+                  x1={0}
+                  y1={tick.y}
+                  x2={chartWidth}
+                  y2={tick.y}
+                  stroke="#393941"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  opacity={0.3}
+                />
+              ))}
+
+              {/* Grid lines for mass */}
+              {xTicks.map((tick, index) => (
+                <line
+                  key={`x-grid-${index}`}
+                  x1={tick.x}
+                  y1={0}
+                  x2={tick.x}
+                  y2={chartInnerHeight}
+                  stroke="#393941"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  opacity={0.3}
+                />
+              ))}
+
+              {/* Horizontal fusion threshold lines */}
+              {Object.entries(FUSION_TEMP_THRESHOLDS).map(([name, temp], index) => {
+                const logT = Math.log10(temp);
+                if (logT < minLogTemp || logT > maxLogTemp) return null;
+                const y = tempToY(logT);
+                const colors = {
+                  DEUTERIUM: '#fb923c',
+                  HYDROGEN_PP: '#f4d03f',
+                  HYDROGEN_CNO: '#f4d03f',
+                  CARBON: '#ef4444'
+                };
                 return (
-                  <rect
-                    key={`region-${index}`}
-                    x={x1}
-                    y={0}
-                    width={x2 - x1}
-                    height={chartHeight - chartPadding.top - chartPadding.bottom}
-                    fill={threshold.color}
-                    opacity={0.1}
-                  />
-                );
-              })}
-
-              {/* Main axis line */}
-              <line
-                x1={0}
-                y1={(chartHeight - chartPadding.top - chartPadding.bottom) / 2}
-                x2={chartWidth}
-                y2={(chartHeight - chartPadding.top - chartPadding.bottom) / 2}
-                stroke="#393941"
-                strokeWidth={4}
-              />
-
-              {/* Threshold markers */}
-              {dynamicThresholds.map((threshold, index) => {
-                const x = massToX(Math.log10(threshold.value));
-                const y = (chartHeight - chartPadding.top - chartPadding.bottom) / 2;
-                // Alternate labels: even indices on top, odd indices on bottom
-                const isTop = index % 2 === 0;
-                const labelY = isTop ? y - 25 : y + 40;
-
-                return (
-                  <g key={index} style={{ cursor: 'help' }}>
-                    <title>{threshold.name}: {threshold.description}</title>
+                  <g key={`fusion-${name}`}>
                     <line
-                      x1={x}
-                      y1={y - 15}
-                      x2={x}
-                      y2={y + 15}
-                      stroke={threshold.color}
-                      strokeWidth={3}
-                      style={{
-                        transition: 'all 0.5s ease-in-out'
-                      }}
-                    />
-                    <circle
-                      cx={x}
-                      cy={y}
-                      r={6}
-                      fill={threshold.color}
-                      stroke="#fff"
+                      x1={0}
+                      y1={y}
+                      x2={chartWidth}
+                      y2={y}
+                      stroke={colors[name] || '#a1a1a8'}
                       strokeWidth={2}
-                      style={{
-                        transition: 'all 0.5s ease-in-out'
-                      }}
+                      strokeDasharray="8 4"
+                      opacity={0.6}
                     />
                     <text
-                      x={x}
-                      y={labelY}
-                      textAnchor="middle"
-                      fill={threshold.color}
-                      fontSize="10"
+                      x={chartWidth + 5}
+                      y={y + 4}
+                      fill={colors[name] || '#a1a1a8'}
+                      fontSize="9"
                       fontWeight="bold"
-                      style={{
-                        transition: 'all 0.5s ease-in-out'
-                      }}
                     >
-                      {threshold.name.split(' ')[0]}
-                      {!threshold.isFixed && ' ⚡'}
+                      {name === 'HYDROGEN_PP' ? 'H' : name === 'DEUTERIUM' ? 'D' : name === 'CARBON' ? 'C' : ''}
                     </text>
                   </g>
                 );
               })}
 
-              {/* Current mass indicator */}
-              <g>
-                <line
-                  x1={massToX(logMass)}
-                  y1={0}
-                  x2={massToX(logMass)}
-                  y2={chartHeight - chartPadding.top - chartPadding.bottom}
+              {/* Temperature curve */}
+              {curvePath && (
+                <path
+                  d={curvePath}
                   stroke="#8c7ae6"
-                  strokeWidth={4}
+                  strokeWidth={3}
+                  fill="none"
+                  style={{
+                    transition: 'all 0.5s ease-in-out'
+                  }}
                 />
+              )}
+
+              {/* Current position indicator */}
+              <g>
                 <circle
                   cx={massToX(logMass)}
-                  cy={(chartHeight - chartPadding.top - chartPadding.bottom) / 2}
-                  r={10}
+                  cy={tempToY(Math.log10(coreTemp))}
+                  r={8}
                   fill="#8c7ae6"
                   stroke="#fff"
                   strokeWidth={3}
                 />
+                {/* Crosshairs */}
+                <line
+                  x1={massToX(logMass)}
+                  y1={0}
+                  x2={massToX(logMass)}
+                  y2={chartInnerHeight}
+                  stroke="#8c7ae6"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  opacity={0.4}
+                />
+                <line
+                  x1={0}
+                  y1={tempToY(Math.log10(coreTemp))}
+                  x2={chartWidth}
+                  y2={tempToY(Math.log10(coreTemp))}
+                  stroke="#8c7ae6"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  opacity={0.4}
+                />
               </g>
 
-              {/* X-axis ticks and labels */}
+              {/* X-axis labels */}
               {xTicks.map((tick, index) => (
                 <text
-                  key={index}
+                  key={`x-label-${index}`}
                   x={tick.x}
-                  y={chartHeight - chartPadding.top - chartPadding.bottom + 25}
+                  y={chartInnerHeight + 20}
                   textAnchor="middle"
                   fill="#a1a1a8"
-                  fontSize="11"
+                  fontSize="10"
                 >
                   {tick.label}
                 </text>
               ))}
+
+              {/* Y-axis labels */}
+              {yTicks.map((tick, index) => (
+                <text
+                  key={`y-label-${index}`}
+                  x={-10}
+                  y={tick.y + 4}
+                  textAnchor="end"
+                  fill="#a1a1a8"
+                  fontSize="10"
+                >
+                  {tick.label}
+                </text>
+              ))}
+
+              {/* X-axis title */}
+              <text
+                x={chartWidth / 2}
+                y={chartInnerHeight + 40}
+                textAnchor="middle"
+                fill="#e9e9ea"
+                fontSize="12"
+                fontWeight="bold"
+              >
+                Mass (M☉)
+              </text>
+
+              {/* Y-axis title */}
+              <text
+                x={-chartInnerHeight / 2}
+                y={-60}
+                textAnchor="middle"
+                fill="#e9e9ea"
+                fontSize="12"
+                fontWeight="bold"
+                transform={`rotate(-90, -${chartInnerHeight / 2}, -60)`}
+              >
+                Core Temperature (K)
+              </text>
             </g>
           </svg>
         </div>
