@@ -192,48 +192,52 @@ export default function ARSunFinder({ sunAzimuth, sunAltitude, onClose }) {
 
       const { alpha, beta, gamma } = deviceOrientationRef.current;
 
-      // Calculate device's pointing direction
-      // alpha: compass heading (0° = North, 90° = East, 180° = South, 270° = West)
-      // beta: pitch (tilt forward/back)
-      //   - 0° = device flat (screen up) → looking at zenith (90° elevation)
-      //   - 90° = device vertical → looking at horizon (0° elevation)
-      //   - -90° = device upside down vertical → looking at horizon behind
-      // gamma: roll (tilt left/right)
+      // Convert sun position (azimuth, altitude) to 3D vector
+      const sunAzimuthRad = sunAzimuth * (Math.PI / 180);
+      const sunAltitudeRad = sunAltitude * (Math.PI / 180);
 
-      // Convert beta (pitch) to elevation angle
-      // When device is flat (beta=0), you're looking UP at zenith (elevation=90°)
-      // When device is vertical (beta=90), you're looking at horizon (elevation=0°)
-      const deviceElevation = 90 - beta;
+      const sunVector = new THREE.Vector3(
+        Math.cos(sunAltitudeRad) * Math.sin(sunAzimuthRad),  // X: East-West
+        Math.sin(sunAltitudeRad),                            // Y: Up-Down
+        -Math.cos(sunAltitudeRad) * Math.cos(sunAzimuthRad)  // Z: North-South (negative because camera looks down -Z)
+      );
 
-      // Convert to radians
-      const deviceHeading = alpha * (Math.PI / 180);
-      const deviceElevationRad = deviceElevation * (Math.PI / 180);
+      // Convert device orientation to 3D rotation matrix
+      // alpha (compass): rotation around Y axis (0° = North)
+      // beta (pitch): rotation around X axis
+      // gamma (roll): rotation around Z axis
+      const alphaRad = alpha * (Math.PI / 180);
+      const betaRad = beta * (Math.PI / 180);
+      const gammaRad = gamma * (Math.PI / 180);
 
-      // Sun's position in spherical coordinates
-      const sunHeading = sunAzimuth * (Math.PI / 180);
-      const sunElevation = sunAltitude * (Math.PI / 180);
+      // Create device orientation quaternion (ZXY order to match device orientation spec)
+      const deviceQuaternion = new THREE.Quaternion();
+      const euler = new THREE.Euler(betaRad, alphaRad, -gammaRad, 'YXZ');
+      deviceQuaternion.setFromEuler(euler);
 
-      // Calculate difference angles
-      let headingDiff = sunHeading - deviceHeading;
+      // Device's forward direction (what the camera is pointing at)
+      const deviceForward = new THREE.Vector3(0, 0, -1);
+      deviceForward.applyQuaternion(deviceQuaternion);
 
-      // Normalize to -π to π
-      while (headingDiff > Math.PI) headingDiff -= 2 * Math.PI;
-      while (headingDiff < -Math.PI) headingDiff += 2 * Math.PI;
+      // Calculate the direction from device to sun (in device's local space)
+      const toSunLocal = sunVector.clone().sub(deviceForward);
 
-      const elevationDiff = sunElevation - deviceElevationRad;
+      // Transform back to world space by inverting device rotation
+      const deviceQuaternionInverse = deviceQuaternion.clone().invert();
+      toSunLocal.applyQuaternion(deviceQuaternionInverse);
 
-      // Rotate arrow to point at sun
-      // Y-axis rotation = horizontal (left/right)
-      // X-axis rotation = vertical (up/down)
-      arrowRef.current.rotation.y = -headingDiff;
-      arrowRef.current.rotation.x = elevationDiff;
+      // Point arrow at this direction
+      // Arrow's default direction is up (+Y), we need to rotate it to point at toSunLocal
+      const arrowUp = new THREE.Vector3(0, 1, 0);
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromUnitVectors(arrowUp, toSunLocal.normalize());
+
+      arrowRef.current.quaternion.copy(quaternion);
 
       // Check if device is pointing at sun (within 10° tolerance)
-      const headingError = Math.abs(headingDiff) * (180 / Math.PI);
-      const elevationError = Math.abs(elevationDiff) * (180 / Math.PI);
-      const totalError = Math.sqrt(headingError * headingError + elevationError * elevationError);
-
-      const aligned = totalError < 10;
+      // Calculate angle between device forward and sun direction
+      const angleBetween = deviceForward.angleTo(sunVector) * (180 / Math.PI);
+      const aligned = angleBetween < 10;
       setIsAligned(aligned);
 
       // Animate glow when aligned
