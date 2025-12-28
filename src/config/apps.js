@@ -20,5 +20,13 @@ export const APPS = [
     icon: '🌌',
     path: '/stellar-mass',
     component: lazy(() => import('../apps/stellar-mass/StellarMassApp.jsx'))
+  },
+  {
+    id: 'turing-machine',
+    name: 'Turing Machine',
+    description: 'Interactive Turing machine simulator - explore the foundations of computation',
+    icon: '🤖',
+    path: '/turing-machine',
+    component: lazy(() => import('../apps/turing-machine/TuringMachineApp.jsx'))
   }
 ];
