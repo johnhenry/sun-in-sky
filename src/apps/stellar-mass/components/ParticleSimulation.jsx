@@ -170,6 +170,10 @@ function CubeParticles({ mass, radius, fusionState }) {
   useFrame((state) => {
     if (!meshRef.current) return;
 
+    // Safety check: ensure positions are initialized
+    if (!targetPositions.current || targetPositions.current.length === 0) return;
+    if (!initialPositions.current || initialPositions.current.length === 0) return;
+
     const dummy = new THREE.Object3D();
     const time = state.clock.elapsedTime;
 

@@ -513,21 +513,87 @@ export default function StellarMassApp() {
       backgroundColor: '#1a1a1c',
       color: '#e9e9ea',
       minHeight: '100vh',
-      padding: '20px'
+      padding: '80px 20px 20px 20px' // Add top padding for fixed nav
     }}>
       <div className="content-wrapper" ref={containerRef}>
-        <header style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', color: '#f4d03f' }}>
-            Stellar Mass Explorer
-          </h1>
-          <p style={{ fontSize: '1.1rem', color: '#a1a1a8' }}>
+        <header style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '15px',
+          marginBottom: '25px'
+        }}>
+          <p style={{ fontSize: '1.05rem', color: '#a1a1a8', margin: 0 }}>
             Explore the mass spectrum from planets to black holes
           </p>
+
+          {/* Panel Toggle Buttons */}
+          <div style={{
+            display: 'flex',
+            gap: '12px'
+          }}>
+            <button
+              onClick={() => setLearnPanelOpen(!learnPanelOpen)}
+              onMouseOver={(e) => {
+                if (!learnPanelOpen) {
+                  e.currentTarget.style.borderColor = '#8c7ae6';
+                  e.currentTarget.style.color = '#8c7ae6';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!learnPanelOpen) {
+                  e.currentTarget.style.borderColor = '#393941';
+                  e.currentTarget.style.color = '#e9e9ea';
+                }
+              }}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: learnPanelOpen ? 'rgba(140, 122, 230, 0.15)' : 'transparent',
+                color: learnPanelOpen ? '#8c7ae6' : '#e9e9ea',
+                border: learnPanelOpen ? '2px solid #8c7ae6' : '1px solid #393941',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Learn
+            </button>
+            <button
+              onClick={() => setChallengePanelOpen(!challengePanelOpen)}
+              onMouseOver={(e) => {
+                if (!challengePanelOpen) {
+                  e.currentTarget.style.borderColor = '#8c7ae6';
+                  e.currentTarget.style.color = '#8c7ae6';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!challengePanelOpen) {
+                  e.currentTarget.style.borderColor = '#393941';
+                  e.currentTarget.style.color = '#e9e9ea';
+                }
+              }}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: challengePanelOpen ? 'rgba(140, 122, 230, 0.15)' : 'transparent',
+                color: challengePanelOpen ? '#8c7ae6' : '#e9e9ea',
+                border: challengePanelOpen ? '2px solid #8c7ae6' : '1px solid #393941',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Challenge
+            </button>
+          </div>
         </header>
 
         {/* Mass-Temperature Diagram */}
         <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '15px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.3rem', marginBottom: '15px', textAlign: 'center', color: '#e9e9ea', fontWeight: 500 }}>
             Mass-Temperature Diagram
           </h2>
           <svg
@@ -967,14 +1033,26 @@ export default function StellarMassApp() {
             <button
               onClick={() => setLogRadius(Math.log10(radiusRange.min))}
               disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
+              onMouseOver={(e) => {
+                if (mass >= HYDROSTATIC_EQUILIBRIUM_MASS) {
+                  e.currentTarget.style.borderColor = '#4ade80';
+                  e.currentTarget.style.color = '#4ade80';
+                }
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = '#393941';
+                e.currentTarget.style.color = '#e9e9ea';
+              }}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#393941',
+                backgroundColor: 'transparent',
                 color: '#e9e9ea',
-                border: 'none',
-                borderRadius: '4px',
+                border: '1px solid #393941',
+                borderRadius: '5px',
                 cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
-                fontSize: '0.8rem',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
                 opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
             >
@@ -983,14 +1061,26 @@ export default function StellarMassApp() {
             <button
               onClick={() => setLogRadius(Math.log10(radiusRange.realistic))}
               disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
+              onMouseOver={(e) => {
+                if (mass >= HYDROSTATIC_EQUILIBRIUM_MASS) {
+                  e.currentTarget.style.borderColor = '#4ade80';
+                  e.currentTarget.style.color = '#4ade80';
+                }
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = '#393941';
+                e.currentTarget.style.color = '#e9e9ea';
+              }}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#393941',
+                backgroundColor: 'transparent',
                 color: '#e9e9ea',
-                border: 'none',
-                borderRadius: '4px',
+                border: '1px solid #393941',
+                borderRadius: '5px',
                 cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
-                fontSize: '0.8rem',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
                 opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
             >
@@ -999,14 +1089,26 @@ export default function StellarMassApp() {
             <button
               onClick={() => setLogRadius(Math.log10(radiusRange.max))}
               disabled={mass < HYDROSTATIC_EQUILIBRIUM_MASS}
+              onMouseOver={(e) => {
+                if (mass >= HYDROSTATIC_EQUILIBRIUM_MASS) {
+                  e.currentTarget.style.borderColor = '#4ade80';
+                  e.currentTarget.style.color = '#4ade80';
+                }
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = '#393941';
+                e.currentTarget.style.color = '#e9e9ea';
+              }}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#393941',
+                backgroundColor: 'transparent',
                 color: '#e9e9ea',
-                border: 'none',
-                borderRadius: '4px',
+                border: '1px solid #393941',
+                borderRadius: '5px',
                 cursor: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 'pointer' : 'not-allowed',
-                fontSize: '0.8rem',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
                 opacity: mass >= HYDROSTATIC_EQUILIBRIUM_MASS ? 1 : 0.4
               }}
             >
@@ -1018,7 +1120,7 @@ export default function StellarMassApp() {
 
         {/* Preset Buttons */}
         <div style={{ marginBottom: '30px' }}>
-          <h3 style={{ fontSize: '1.3rem', marginBottom: '15px', textAlign: 'center' }}>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '15px', textAlign: 'center', color: '#a1a1a8', fontWeight: 500 }}>
             Quick Presets
           </h3>
           <div style={{
@@ -1032,78 +1134,43 @@ export default function StellarMassApp() {
               { name: 'Jupiter', value: 0.001 },
               { name: 'Sun', value: 1.0 },
               { name: 'Neutron Star', value: 1.5 }
-            ].map((preset) => (
-              <button
-                key={preset.name}
-                onClick={() => handlePresetClick(preset.value)}
-                style={{
-                  padding: '15px 25px',
-                  backgroundColor: Math.abs(Math.log10(preset.value) - logMass) < 0.1
-                    ? '#8c7ae6'
-                    : '#393941',
-                  color: '#e9e9ea',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  fontSize: '1rem',
-                  fontWeight: 'bold'
-                }}
-                onMouseEnter={(e) => {
-                  if (Math.abs(Math.log10(preset.value) - logMass) >= 0.1) {
-                    e.target.style.backgroundColor = '#4a4a52';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (Math.abs(Math.log10(preset.value) - logMass) >= 0.1) {
-                    e.target.style.backgroundColor = '#393941';
-                  }
-                }}
-              >
-                {preset.name}
-              </button>
-            ))}
+            ].map((preset) => {
+              const isActive = Math.abs(Math.log10(preset.value) - logMass) < 0.1;
+              return (
+                <button
+                  key={preset.name}
+                  onClick={() => handlePresetClick(preset.value)}
+                  onMouseOver={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = '#8c7ae6';
+                      e.currentTarget.style.color = '#8c7ae6';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = '#393941';
+                      e.currentTarget.style.color = '#e9e9ea';
+                    }
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: isActive ? 'rgba(140, 122, 230, 0.15)' : 'transparent',
+                    color: isActive ? '#8c7ae6' : '#e9e9ea',
+                    border: isActive ? '2px solid #8c7ae6' : '1px solid #393941',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontSize: '1rem',
+                    fontWeight: 500
+                  }}
+                >
+                  {preset.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Panel Toggle Buttons */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '15px',
-          marginTop: '30px'
-        }}>
-          <button
-            onClick={() => setLearnPanelOpen(!learnPanelOpen)}
-            style={{
-              padding: '15px 30px',
-              backgroundColor: learnPanelOpen ? '#8c7ae6' : '#393941',
-              color: '#e9e9ea',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 'bold'
-            }}
-          >
-            Learn
-          </button>
-          <button
-            onClick={() => setChallengePanelOpen(!challengePanelOpen)}
-            style={{
-              padding: '15px 30px',
-              backgroundColor: challengePanelOpen ? '#8c7ae6' : '#393941',
-              color: '#e9e9ea',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 'bold'
-            }}
-          >
-            Challenge
-          </button>
-        </div>
       </div>
 
       {/* Panels */}
